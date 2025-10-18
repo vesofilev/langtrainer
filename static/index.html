@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ancient Greek Language Trainer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 600px;
+            width: 100%;
+            padding: 40px;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 28px;
+            text-align: center;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .setup-screen, .quiz-screen, .summary-screen, .training-screen {
+            display: none;
+        }
+
+        .setup-screen.active, .quiz-screen.active, .summary-screen.active, .training-screen.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        select, input[type="number"], input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            margin-top: 10px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s ease;
+        }
+
+        .question-counter {
+            text-align: center;
+            color: #666;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .question-box {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+
+        .question-label {
+            font-size: 12px;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .question-text {
+            font-size: 32px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .feedback {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: 600;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .feedback.correct {
+            background: #d4edda;
+            color: #155724;
+            border: 2px solid #c3e6cb;
+        }
+
+        .feedback.incorrect {
+            background: #f8d7da;
+            color: #721c24;
+            border: 2px solid #f5c6cb;
+        }
+
+        .feedback.hidden {
+            display: none;
+        }
+
+        .score-display {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .score-big {
+            font-size: 48px;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .score-label {
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .incorrect-list {
+            margin-top: 30px;
+        }
+
+        .incorrect-list h3 {
+            color: #721c24;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .incorrect-item {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+        }
+
+        .incorrect-item strong {
+            color: #856404;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .stat-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .stat-label {
+            color: #666;
+            margin-top: 5px;
+            font-size: 14px;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .input-group input {
+            flex: 1;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #667eea;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 25px;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+            .question-text {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏛️ Ancient Greek Trainer</h1>
+        <p class="subtitle">Test your vocabulary knowledge</p>
+
+        <!-- Setup Screen -->
+        <div class="setup-screen active" id="setupScreen">
+            <div class="form-group">
+                <label for="sessionMode">Session Mode:</label>
+                <select id="sessionMode">
+                    <option value="training">Training + Exam</option>
+                    <option value="exam">Exam Only</option>
+                </select>
+                <small style="color: #666; display: block; margin-top: 5px;">
+                    Training: Learn the words first, then get tested on them
+                </small>
+            </div>
+
+            <div class="form-group">
+                <label for="direction">Quiz Direction:</label>
+                <select id="direction">
+                    <option value="greek_to_bulgarian">Ancient Greek → Bulgarian</option>
+                    <option value="bulgarian_to_greek">Bulgarian → Ancient Greek</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="wordCount">Number of Words:</label>
+                <input type="number" id="wordCount" min="1" max="50" value="15">
+            </div>
+
+            <button class="btn" onclick="startSession()">Start Session</button>
+        </div>
+
+        <!-- Training Screen -->
+        <div class="training-screen" id="trainingScreen">
+            <div class="progress-bar">
+                <div class="progress-fill" id="trainingProgressFill"></div>
+            </div>
+
+            <div class="question-counter" id="trainingCounter"></div>
+
+            <h2 style="text-align: center; color: #667eea; margin-bottom: 30px;">📚 Training Mode</h2>
+
+            <div class="question-box" style="background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);">
+                <div class="question-label" id="trainingPromptLabel"></div>
+                <div class="question-text" id="trainingPrompt" style="color: #667eea;"></div>
+                
+                <div style="margin: 30px 0; padding: 20px; background: white; border-radius: 8px; border: 2px solid #667eea;">
+                    <div style="font-size: 14px; color: #888; margin-bottom: 5px;">Translation:</div>
+                    <div id="trainingAnswer" style="font-size: 28px; font-weight: 600; color: #333;"></div>
+                </div>
+            </div>
+
+            <button class="btn" id="trainingNextBtn" onclick="nextTrainingWord()">Next Word</button>
+            <button class="btn btn-secondary" onclick="skipToExam()">Skip to Exam</button>
+        </div>
+
+        <!-- Quiz Screen -->
+        <div class="quiz-screen" id="quizScreen">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+
+            <div class="question-counter" id="questionCounter"></div>
+
+            <div class="question-box">
+                <div class="question-label" id="questionLabel"></div>
+                <div class="question-text" id="questionText"></div>
+            </div>
+
+            <div class="feedback hidden" id="feedback"></div>
+
+            <div class="form-group">
+                <input type="text" id="answerInput" placeholder="Type your answer..." autocomplete="off">
+            </div>
+
+            <button class="btn" id="submitBtn" onclick="submitAnswer()">Submit Answer</button>
+        </div>
+
+        <!-- Summary Screen -->
+        <div class="summary-screen" id="summaryScreen">
+            <h2 style="text-align: center; margin-bottom: 30px; color: #667eea;">Quiz Complete! 🎉</h2>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="scorePercentage"></div>
+                    <div class="stat-label">Score</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="correctCount"></div>
+                    <div class="stat-label">Correct Answers</div>
+                </div>
+            </div>
+
+            <div class="incorrect-list" id="incorrectList"></div>
+
+            <div id="retakeSection" style="display: none;">
+                <div style="background: #fff3cd; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107;">
+                    <p style="margin: 0; color: #856404; font-weight: 600;">
+                        💡 Want to improve your score? Retake the test with the same words!
+                    </p>
+                </div>
+                <button class="btn" onclick="retakeExam()" style="background: #ffc107; margin-bottom: 10px;">
+                    🔄 Retake Exam (Same Words)
+                </button>
+            </div>
+
+            <button class="btn" onclick="restartQuiz()">Start New Quiz</button>
+        </div>
+    </div>
+
+    <script>
+        // State management
+        const state = {
+            sessionId: null,
+            questions: [],
+            currentIndex: 0,
+            answers: [],
+            config: null,
+            mode: 'exam', // 'training' or 'exam'
+            trainingCompleted: false,
+            wordPairs: [], // Store word pairs from training to reuse in exam
+            wasTrainingSession: false // Track if user went through training
+        };
+
+        // API base URL
+        const API_BASE = window.location.origin + '/api';
+
+        // Sound effects using Web Audio API
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const audioContext = new AudioContext();
+
+        async function playSuccessSound() {
+            // Resume audio context if suspended (browser requirement)
+            if (audioContext.state === 'suspended') {
+                await audioContext.resume();
+            }
+            
+            // Pleasant ascending notes for success
+            const times = [0, 0.1, 0.2];
+            const frequencies = [523.25, 659.25, 783.99]; // C5, E5, G5 (major chord)
+            
+            times.forEach((time, index) => {
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.value = frequencies[index];
+                oscillator.type = 'sine';
+                
+                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime + time);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + time + 0.3);
+                
+                oscillator.start(audioContext.currentTime + time);
+                oscillator.stop(audioContext.currentTime + time + 0.3);
+            });
+        }
+
+        async function playErrorSound() {
+            // Resume audio context if suspended (browser requirement)
+            if (audioContext.state === 'suspended') {
+                await audioContext.resume();
+            }
+            
+            // Gentle descending tones for errors
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(400, audioContext.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(200, audioContext.currentTime + 0.3);
+            
+            gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.3);
+        }
+
+        // Initialize
+        async function init() {
+            try {
+                const response = await fetch(`${API_BASE}/config`);
+                state.config = await response.json();
+                document.getElementById('wordCount').max = state.config.max_count;
+            } catch (error) {
+                console.error('Failed to load config:', error);
+            }
+        }
+
+        // Start session (training or exam)
+        async function startSession() {
+            const sessionMode = document.getElementById('sessionMode').value;
+            const direction = document.getElementById('direction').value;
+            const count = parseInt(document.getElementById('wordCount').value);
+
+            try {
+                const response = await fetch(`${API_BASE}/quiz`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ direction, count })
+                });
+
+                const data = await response.json();
+                state.sessionId = data.session_id;
+                state.questions = data.questions;
+                state.wordPairs = data.word_pairs;  // Store word pairs for reuse
+                state.currentIndex = 0;
+                state.answers = [];
+                state.trainingCompleted = false;
+                state.wasTrainingSession = (sessionMode === 'training'); // Track if training was used
+
+                if (sessionMode === 'training') {
+                    state.mode = 'training';
+                    showScreen('trainingScreen');
+                    displayTrainingWord();
+                } else {
+                    state.mode = 'exam';
+                    showScreen('quizScreen');
+                    displayQuestion();
+                }
+            } catch (error) {
+                alert('Failed to start session: ' + error.message);
+            }
+        }        // Display training word
+        function displayTrainingWord() {
+            const question = state.questions[state.currentIndex];
+            const progress = ((state.currentIndex) / state.questions.length) * 100;
+
+            document.getElementById('trainingProgressFill').style.width = progress + '%';
+            document.getElementById('trainingCounter').textContent = 
+                `Word ${state.currentIndex + 1} of ${state.questions.length}`;
+            document.getElementById('trainingPromptLabel').textContent = question.prompt_label;
+            document.getElementById('trainingPrompt').textContent = question.prompt;
+            
+            // Fetch the correct answer for this question
+            fetchCorrectAnswer();
+
+            const nextBtn = document.getElementById('trainingNextBtn');
+            if (state.currentIndex === state.questions.length - 1) {
+                nextBtn.textContent = 'Start Exam';
+            } else {
+                nextBtn.textContent = 'Next Word';
+            }
+        }
+
+        async function fetchCorrectAnswer() {
+            try {
+                const response = await fetch(
+                    `${API_BASE}/quiz/${state.sessionId}/question/${state.currentIndex}`
+                );
+                const data = await response.json();
+                document.getElementById('trainingAnswer').textContent = data.correct_answer;
+            } catch (error) {
+                console.error('Failed to fetch answer:', error);
+                document.getElementById('trainingAnswer').textContent = '(Error loading answer)';
+            }
+        }
+
+        function nextTrainingWord() {
+            state.currentIndex++;
+            
+            if (state.currentIndex < state.questions.length) {
+                displayTrainingWord();
+            } else {
+                // Training complete, start exam
+                startExam();
+            }
+        }
+
+        function skipToExam() {
+            if (confirm('Are you sure you want to skip training and go directly to the exam?')) {
+                startExam();
+            }
+        }
+
+        function startExam() {
+            state.trainingCompleted = true;
+            state.currentIndex = 0;
+            state.answers = [];
+            
+            // Create new quiz session with same words
+            startQuizAfterTraining();
+        }
+
+        async function startQuizAfterTraining() {
+            const direction = document.getElementById('direction').value;
+
+            try {
+                // Start a new quiz session WITH THE SAME word pairs from training
+                const response = await fetch(`${API_BASE}/quiz`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        direction, 
+                        count: state.wordPairs.length,
+                        word_pairs: state.wordPairs  // Reuse the same words!
+                    })
+                });
+
+                const data = await response.json();
+                state.sessionId = data.session_id;
+                state.questions = data.questions;
+                state.currentIndex = 0;
+                state.answers = [];
+
+                showScreen('quizScreen');
+                displayQuestion();
+            } catch (error) {
+                alert('Failed to start exam: ' + error.message);
+            }
+        }
+
+        // Start quiz (legacy - now called from startSession)
+        async function startQuiz() {
+            const direction = document.getElementById('direction').value;
+            const count = parseInt(document.getElementById('wordCount').value);
+
+            try {
+                const response = await fetch(`${API_BASE}/quiz`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ direction, count })
+                });
+
+                const data = await response.json();
+                state.sessionId = data.session_id;
+                state.questions = data.questions;
+                state.currentIndex = 0;
+                state.answers = [];
+
+                showScreen('quizScreen');
+                displayQuestion();
+            } catch (error) {
+                alert('Failed to start quiz: ' + error.message);
+            }
+        }
+
+        // Display current question
+        function displayQuestion() {
+            const question = state.questions[state.currentIndex];
+            const progress = ((state.currentIndex) / state.questions.length) * 100;
+
+            document.getElementById('progressFill').style.width = progress + '%';
+            document.getElementById('questionCounter').textContent = 
+                `Question ${state.currentIndex + 1} of ${state.questions.length}`;
+            document.getElementById('questionLabel').textContent = question.prompt_label;
+            document.getElementById('questionText').textContent = question.prompt;
+            document.getElementById('answerInput').value = '';
+            document.getElementById('feedback').classList.add('hidden');
+            document.getElementById('answerInput').focus();
+            document.getElementById('submitBtn').textContent = 'Submit Answer';
+            document.getElementById('submitBtn').onclick = submitAnswer;
+        }
+
+        // Submit answer
+        async function submitAnswer() {
+            const answer = document.getElementById('answerInput').value.trim();
+
+            if (!answer) {
+                alert('Please enter an answer');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/quiz/${state.sessionId}/answer`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        question_index: state.currentIndex,
+                        answer: answer
+                    })
+                });
+
+                const result = await response.json();
+                displayFeedback(result);
+                state.answers.push(result);
+
+                // Update button to "Next"
+                document.getElementById('submitBtn').textContent = 
+                    state.currentIndex < state.questions.length - 1 ? 'Next Question' : 'View Results';
+                document.getElementById('submitBtn').onclick = nextQuestion;
+            } catch (error) {
+                alert('Failed to submit answer: ' + error.message);
+            }
+        }
+
+        // Display feedback
+        function displayFeedback(result) {
+            const feedback = document.getElementById('feedback');
+            feedback.classList.remove('hidden', 'correct', 'incorrect');
+
+            if (result.correct) {
+                feedback.classList.add('correct');
+                feedback.innerHTML = `✅ Correct! Well done!`;
+                playSuccessSound(); // Play success sound
+            } else if (result.partial_credit) {
+                // Partial credit for accent/aspiration errors
+                feedback.classList.add('incorrect');
+                feedback.innerHTML = `
+                    ⚠️ Almost! Check accents/aspirations (0.5 points)<br>
+                    <small>You answered: <strong>${result.user_answer}</strong></small><br>
+                    <small>Correct answer: <strong>${result.correct_answer}</strong></small>
+                `;
+                playErrorSound(); // Play error sound (softer than full error)
+            } else {
+                feedback.classList.add('incorrect');
+                feedback.innerHTML = `
+                    ❌ Incorrect<br>
+                    <small>You answered: <strong>${result.user_answer}</strong></small><br>
+                    <small>Correct answer: <strong>${result.correct_answer}</strong></small>
+                `;
+                playErrorSound(); // Play error sound
+            }
+
+            document.getElementById('answerInput').disabled = true;
+        }
+
+        // Next question or show summary
+        function nextQuestion() {
+            document.getElementById('answerInput').disabled = false;
+            state.currentIndex++;
+
+            if (state.currentIndex < state.questions.length) {
+                displayQuestion();
+            } else {
+                showSummary();
+            }
+        }
+
+        // Show summary
+        async function showSummary() {
+            try {
+                const response = await fetch(`${API_BASE}/quiz/${state.sessionId}/summary`);
+                const summary = await response.json();
+
+                document.getElementById('scorePercentage').textContent = summary.score_percentage + '%';
+                document.getElementById('correctCount').textContent = 
+                    `${summary.correct_count}/${summary.total_questions}`;
+
+                // Display incorrect and partial credit words
+                const incorrectList = document.getElementById('incorrectList');
+                let html = '';
+                
+                // Show fully incorrect words
+                if (summary.incorrect_words.length > 0) {
+                    html += '<h3>Review These Words (0 points):</h3>';
+                    summary.incorrect_words.forEach(item => {
+                        html += `
+                            <div class="incorrect-item">
+                                <strong>${item.prompt}</strong> → ${item.correct_answer}
+                                <br><small style="color: #856404;">You answered: ${item.user_answer || '(no answer)'}</small>
+                            </div>
+                        `;
+                    });
+                }
+                
+                // Show partial credit words (accent errors)
+                if (summary.partial_credit_words && summary.partial_credit_words.length > 0) {
+                    html += '<h3 style="margin-top: 20px;">Check Accents/Aspirations (0.5 points each):</h3>';
+                    summary.partial_credit_words.forEach(item => {
+                        html += `
+                            <div class="incorrect-item" style="border-left: 3px solid #ffc107;">
+                                <strong>${item.prompt}</strong> → ${item.correct_answer}
+                                <br><small style="color: #856404;">You answered: ${item.user_answer}</small>
+                            </div>
+                        `;
+                    });
+                }
+                
+                if (summary.incorrect_words.length === 0 && 
+                    (!summary.partial_credit_words || summary.partial_credit_words.length === 0)) {
+                    html = '<p style="text-align: center; color: #28a745; font-weight: 600;">🎉 Perfect score! You got all answers correct!</p>';
+                }
+                
+                incorrectList.innerHTML = html;
+
+                // Show retake option if:
+                // 1. User went through training (wasTrainingSession)
+                // 2. Score is not 100%
+                // 3. We have word pairs to reuse
+                const retakeSection = document.getElementById('retakeSection');
+                if (state.wasTrainingSession && 
+                    summary.score_percentage < 100 && 
+                    state.wordPairs.length > 0) {
+                    retakeSection.style.display = 'block';
+                } else {
+                    retakeSection.style.display = 'none';
+                }
+
+                showScreen('summaryScreen');
+            } catch (error) {
+                alert('Failed to load summary: ' + error.message);
+            }
+        }
+
+        // Retake exam with same words after training
+        function retakeExam() {
+            // Reset answers but keep the same word pairs
+            state.answers = Array(state.wordPairs.length).fill(null);
+            state.wasTrainingSession = true; // Keep the flag so retake option remains available
+            
+            // Start quiz with the same word pairs
+            startQuizAfterTraining();
+        }
+
+        // Restart quiz
+        function restartQuiz() {
+            showScreen('setupScreen');
+            state.sessionId = null;
+            state.questions = [];
+            state.currentIndex = 0;
+            state.answers = [];
+            state.trainingCompleted = false;
+            state.mode = 'exam';
+            state.wordPairs = [];  // Clear stored word pairs
+        }
+
+        // Show screen
+        function showScreen(screenId) {
+            document.querySelectorAll('.setup-screen, .quiz-screen, .summary-screen, .training-screen')
+                .forEach(screen => screen.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        // Handle Enter key
+        document.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const activeScreen = document.querySelector('.setup-screen.active, .quiz-screen.active, .training-screen.active');
+                if (activeScreen) {
+                    if (activeScreen.id === 'setupScreen') {
+                        startSession();
+                    } else if (activeScreen.id === 'quizScreen') {
+                        document.getElementById('submitBtn').click();
+                    } else if (activeScreen.id === 'trainingScreen') {
+                        nextTrainingWord();
+                    }
+                }
+            }
+        });
+
+        // Initialize on load
+        init();
+    </script>
+</body>
+</html>
