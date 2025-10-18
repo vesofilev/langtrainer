@@ -133,6 +133,55 @@
             font-size: 14px;
         }
 
+        .timer-container {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+            border-radius: 12px;
+            border: 2px solid #e0e0e0;
+            transition: all 0.3s ease;
+        }
+
+        .timer-container.warning {
+            background: #fff3cd;
+            border-color: #ffc107;
+            animation: pulse 1s ease-in-out infinite;
+        }
+
+        .timer-container.danger {
+            background: #f8d7da;
+            border-color: #dc3545;
+            animation: pulse 0.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+
+        .timer-label {
+            font-size: 12px;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+
+        .timer-display {
+            font-size: 36px;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .timer-container.warning .timer-display {
+            color: #ffc107;
+        }
+
+        .timer-container.danger .timer-display {
+            color: #dc3545;
+        }
+
         .question-box {
             background: #f8f9fa;
             padding: 30px;
@@ -311,6 +360,14 @@
                 <input type="number" id="wordCount" min="1" max="50" value="15">
             </div>
 
+            <div class="form-group">
+                <label for="timePerQuestion">Time per Question (seconds):</label>
+                <input type="number" id="timePerQuestion" min="10" max="300" value="60" step="5">
+                <small style="color: #666; display: block; margin-top: 5px;">
+                    Default: 60 seconds (Range: 10-300 seconds)
+                </small>
+            </div>
+
             <button class="btn" onclick="startSession()">Start Session</button>
         </div>
 
@@ -345,6 +402,12 @@
             </div>
 
             <div class="question-counter" id="questionCounter"></div>
+
+            <!-- Timer Display -->
+            <div class="timer-container" id="timerContainer">
+                <div class="timer-label">Time Remaining:</div>
+                <div class="timer-display" id="timerDisplay">60</div>
+            </div>
 
             <div class="question-box">
                 <div class="question-label" id="questionLabel"></div>
@@ -403,7 +466,10 @@
             mode: 'exam', // 'training' or 'exam'
             trainingCompleted: false,
             wordPairs: [], // Store word pairs from training to reuse in exam
-            wasTrainingSession: false // Track if user went through training
+            wasTrainingSession: false, // Track if user went through training
+            timePerQuestion: 60, // Time limit per question in seconds
+            timeRemaining: 60, // Current time remaining
+            timerInterval: null // Timer interval ID
         };
 
         // API base URL
@@ -471,9 +537,66 @@
                 const response = await fetch(`${API_BASE}/config`);
                 state.config = await response.json();
                 document.getElementById('wordCount').max = state.config.max_count;
+                document.getElementById('timePerQuestion').value = state.config.default_time_per_question || 60;
+                document.getElementById('timePerQuestion').min = state.config.min_time_per_question || 10;
+                document.getElementById('timePerQuestion').max = state.config.max_time_per_question || 300;
             } catch (error) {
                 console.error('Failed to load config:', error);
             }
+        }
+
+        // Timer functions
+        function startTimer() {
+            // Clear any existing timer
+            if (state.timerInterval) {
+                clearInterval(state.timerInterval);
+            }
+
+            // Reset timer to configured time
+            state.timeRemaining = state.timePerQuestion;
+            updateTimerDisplay();
+
+            // Start countdown
+            state.timerInterval = setInterval(() => {
+                state.timeRemaining--;
+                updateTimerDisplay();
+
+                if (state.timeRemaining <= 0) {
+                    handleTimeout();
+                }
+            }, 1000);
+        }
+
+        function stopTimer() {
+            if (state.timerInterval) {
+                clearInterval(state.timerInterval);
+                state.timerInterval = null;
+            }
+        }
+
+        function updateTimerDisplay() {
+            const display = document.getElementById('timerDisplay');
+            const container = document.getElementById('timerContainer');
+            
+            display.textContent = state.timeRemaining;
+
+            // Update styling based on time remaining
+            container.classList.remove('warning', 'danger');
+            
+            const percentRemaining = (state.timeRemaining / state.timePerQuestion) * 100;
+            
+            if (percentRemaining <= 20) {
+                container.classList.add('danger');
+            } else if (percentRemaining <= 40) {
+                container.classList.add('warning');
+            }
+        }
+
+        async function handleTimeout() {
+            stopTimer();
+            
+            // Auto-submit with empty answer
+            await submitAnswer(true);
         }
 
         // Start session (training or exam)
@@ -481,18 +604,23 @@
             const sessionMode = document.getElementById('sessionMode').value;
             const direction = document.getElementById('direction').value;
             const count = parseInt(document.getElementById('wordCount').value);
+            const timePerQuestion = parseInt(document.getElementById('timePerQuestion').value);
+
+            // Store time per question in state
+            state.timePerQuestion = timePerQuestion;
 
             try {
                 const response = await fetch(`${API_BASE}/quiz`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ direction, count })
+                    body: JSON.stringify({ direction, count, time_per_question: timePerQuestion })
                 });
 
                 const data = await response.json();
                 state.sessionId = data.session_id;
                 state.questions = data.questions;
                 state.wordPairs = data.word_pairs;  // Store word pairs for reuse
+                state.timePerQuestion = data.time_per_question; // Get from server response
                 state.currentIndex = 0;
                 state.answers = [];
                 state.trainingCompleted = false;
@@ -582,13 +710,15 @@
                     body: JSON.stringify({ 
                         direction, 
                         count: state.wordPairs.length,
-                        word_pairs: state.wordPairs  // Reuse the same words!
+                        word_pairs: state.wordPairs,  // Reuse the same words!
+                        time_per_question: state.timePerQuestion  // Keep same time limit
                     })
                 });
 
                 const data = await response.json();
                 state.sessionId = data.session_id;
                 state.questions = data.questions;
+                state.timePerQuestion = data.time_per_question; // Update from server
                 state.currentIndex = 0;
                 state.answers = [];
 
@@ -638,15 +768,23 @@
             document.getElementById('feedback').classList.add('hidden');
             document.getElementById('answerInput').focus();
             document.getElementById('submitBtn').textContent = 'Submit Answer';
-            document.getElementById('submitBtn').onclick = submitAnswer;
+            document.getElementById('submitBtn').onclick = () => submitAnswer(false);
+            
+            // Start the timer for this question
+            startTimer();
         }
 
         // Submit answer
-        async function submitAnswer() {
-            const answer = document.getElementById('answerInput').value.trim();
+        async function submitAnswer(isTimeout = false) {
+            // Stop the timer
+            stopTimer();
 
-            if (!answer) {
+            const answer = isTimeout ? '' : document.getElementById('answerInput').value.trim();
+
+            if (!answer && !isTimeout) {
                 alert('Please enter an answer');
+                // Restart timer if user didn't actually submit
+                startTimer();
                 return;
             }
 
@@ -661,7 +799,7 @@
                 });
 
                 const result = await response.json();
-                displayFeedback(result);
+                displayFeedback(result, isTimeout);
                 state.answers.push(result);
 
                 // Update button to "Next"
@@ -674,11 +812,22 @@
         }
 
         // Display feedback
-        function displayFeedback(result) {
+        function displayFeedback(result, wasTimeout = false) {
             const feedback = document.getElementById('feedback');
             feedback.classList.remove('hidden', 'correct', 'incorrect');
 
-            if (result.correct) {
+            // Check timeout condition more carefully
+            const isActualTimeout = (wasTimeout === true || result.timed_out === true);
+            
+            if (isActualTimeout) {
+                // Timeout feedback
+                feedback.classList.add('incorrect');
+                feedback.innerHTML = `
+                    ⏰ Time's up!<br>
+                    <small>Correct answer: <strong>${result.correct_answer}</strong></small>
+                `;
+                playErrorSound();
+            } else if (result.correct) {
                 feedback.classList.add('correct');
                 feedback.innerHTML = `✅ Correct! Well done!`;
                 playSuccessSound(); // Play success sound
@@ -794,6 +943,7 @@
 
         // Restart quiz
         function restartQuiz() {
+            stopTimer(); // Stop any running timer
             showScreen('setupScreen');
             state.sessionId = null;
             state.questions = [];
