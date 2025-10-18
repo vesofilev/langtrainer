@@ -8,6 +8,7 @@ import unicodedata
 from pathlib import Path
 from typing import Dict, List, Optional
 from uuid import uuid4
+from datetime import datetime, timedelta
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -31,6 +32,7 @@ class WordPair(BaseModel):
 class QuizConfig(BaseModel):
     count: int = Field(default=15, ge=1, le=50)
     direction: str = Field(default=Direction.GREEK_TO_BULGARIAN)
+    time_per_question: int = Field(default=60, ge=10, le=300)  # Time in seconds per question (10s to 5min)
     word_pairs: Optional[List[Dict[str, str]]] = None  # For reusing specific words
 
 
@@ -38,6 +40,7 @@ class QuizStartResponse(BaseModel):
     session_id: str
     total_questions: int
     direction: str
+    time_per_question: int  # Time limit in seconds
     questions: List[Dict[str, str]]
     word_pairs: List[Dict[str, str]]  # Return the word pairs used
 
@@ -54,6 +57,7 @@ class AnswerResponse(BaseModel):
     current_score: float  # Changed to float to support partial credit
     total_answered: int
     partial_credit: bool = False  # True if answer is correct except for accents
+    timed_out: bool = False  # True if the answer was submitted after time expired
 
 
 class QuizSummary(BaseModel):
@@ -132,12 +136,26 @@ class WordRepository:
 class QuizSession:
     """Represents an active quiz session"""
     
-    def __init__(self, session_id: str, word_pairs: List[WordPair], direction: str):
+    def __init__(self, session_id: str, word_pairs: List[WordPair], direction: str, time_per_question: int):
         self.session_id = session_id
         self.word_pairs = word_pairs
         self.direction = direction
+        self.time_per_question = time_per_question  # Time limit in seconds
         self.answers: List[Optional[float]] = [None] * len(word_pairs)  # Changed to float for partial credit
         self.user_answers: List[str] = [""] * len(word_pairs)
+        self.question_start_times: Dict[int, datetime] = {}  # Track when each question was started
+    
+    def start_question(self, index: int):
+        """Mark the start time for a question"""
+        self.question_start_times[index] = datetime.now()
+    
+    def is_timed_out(self, index: int) -> bool:
+        """Check if the time limit has been exceeded for this question"""
+        if index not in self.question_start_times:
+            return False
+        
+        elapsed = datetime.now() - self.question_start_times[index]
+        return elapsed.total_seconds() > self.time_per_question
     
     def get_question(self, index: int) -> Dict[str, str]:
         """Get question at index"""
@@ -158,18 +176,32 @@ class QuizSession:
                 "prompt_label": "Bulgarian"
             }
     
-    def check_answer(self, index: int, user_answer: str) -> tuple[float, bool]:
+    def check_answer(self, index: int, user_answer: str) -> tuple[float, bool, bool]:
         """
         Check if answer is correct
-        Returns: (score, is_partial_credit)
-        - score: 1.0 for fully correct, 0.5 for correct except accents, 0.0 for incorrect
+        
+        For Greek → Bulgarian: Any ONE of the comma-separated Bulgarian variants is acceptable
+        For Bulgarian → Greek: User must provide the FULL Greek answer (all variants)
+        
+        Returns: (score, is_partial_credit, timed_out)
+        - score: 1.0 for fully correct, 0.5 for correct except accents, 0.0 for incorrect or timed out
         - is_partial_credit: True if got 0.5 points (accent-only errors)
+        - timed_out: True if the time limit was exceeded
         """
         if index >= len(self.word_pairs):
             raise IndexError(f"Question index {index} out of range")
         
+        # Check if timed out
+        timed_out = self.is_timed_out(index)
+        
         pair = self.word_pairs[index]
         correct_answer = pair.bulgarian if self.direction == Direction.GREEK_TO_BULGARIAN else pair.greek
+        
+        # If timed out, automatically mark as incorrect
+        if timed_out:
+            self.answers[index] = 0.0
+            self.user_answers[index] = user_answer
+            return 0.0, False, True
         
         # Normalize both answers (without accents) for basic comparison
         normalized_user = WordRepository.normalize_answer(user_answer)
@@ -182,36 +214,51 @@ class QuizSession:
         score = 0.0
         is_partial_credit = False
         
-        # First check exact match WITH accents
-        if normalized_user_with_accents == normalized_correct_with_accents:
-            score = 1.0
-        # Check if it matches any comma-separated variant WITH accents
-        else:
+        # Check based on direction
+        if self.direction == Direction.GREEK_TO_BULGARIAN:
+            # Answering in Bulgarian - ANY ONE variant is acceptable
             import re
-            variants_with_accents = re.split(r',\s*(?![^()]*\))', correct_answer)
-            correct_variants_with_accents = [WordRepository.normalize_with_accents(v) for v in variants_with_accents]
-            if normalized_user_with_accents in correct_variants_with_accents:
+            
+            # First check exact match WITH accents
+            if normalized_user_with_accents == normalized_correct_with_accents:
                 score = 1.0
-            # If not exact match, check WITHOUT accents
+            else:
+                # Check if it matches any comma-separated variant WITH accents
+                variants_with_accents = re.split(r',\s*(?![^()]*\))', correct_answer)
+                correct_variants_with_accents = [WordRepository.normalize_with_accents(v) for v in variants_with_accents]
+                if normalized_user_with_accents in correct_variants_with_accents:
+                    score = 1.0
+                # If not exact match, check WITHOUT accents
+                elif normalized_user == normalized_correct:
+                    # Correct except for accents - give partial credit
+                    score = 0.5
+                    is_partial_credit = True
+                else:
+                    # Check if user answer matches any comma-separated variant WITHOUT accents
+                    variants = re.split(r',\s*(?![^()]*\))', correct_answer)
+                    correct_variants = [WordRepository.normalize_answer(v) for v in variants]
+                    if normalized_user in correct_variants:
+                        # Correct except for accents - give partial credit
+                        score = 0.5
+                        is_partial_credit = True
+                    else:
+                        score = 0.0
+        else:
+            # Bulgarian → Greek - User must provide FULL answer (all variants)
+            # Only accept if the COMPLETE answer matches
+            if normalized_user_with_accents == normalized_correct_with_accents:
+                score = 1.0
             elif normalized_user == normalized_correct:
                 # Correct except for accents - give partial credit
                 score = 0.5
                 is_partial_credit = True
             else:
-                # Check if user answer matches any comma-separated variant WITHOUT accents
-                variants = re.split(r',\s*(?![^()]*\))', correct_answer)
-                correct_variants = [WordRepository.normalize_answer(v) for v in variants]
-                if normalized_user in correct_variants:
-                    # Correct except for accents - give partial credit
-                    score = 0.5
-                    is_partial_credit = True
-                else:
-                    score = 0.0
+                score = 0.0
         
         self.answers[index] = score
         self.user_answers[index] = user_answer
         
-        return score, is_partial_credit
+        return score, is_partial_credit, False
     
     def get_correct_answer(self, index: int) -> str:
         """Get the correct answer for a question"""
@@ -266,10 +313,10 @@ class SessionManager:
     def __init__(self):
         self.sessions: Dict[str, QuizSession] = {}
     
-    def create_session(self, word_pairs: List[WordPair], direction: str) -> QuizSession:
+    def create_session(self, word_pairs: List[WordPair], direction: str, time_per_question: int = 60) -> QuizSession:
         """Create a new quiz session"""
         session_id = str(uuid4())
-        session = QuizSession(session_id, word_pairs, direction)
+        session = QuizSession(session_id, word_pairs, direction, time_per_question)
         self.sessions[session_id] = session
         return session
     
@@ -320,7 +367,10 @@ async def get_config():
         "default_count": 15,
         "min_count": 1,
         "max_count": min(50, len(word_repo.words)),
-        "total_words": len(word_repo.words)
+        "total_words": len(word_repo.words),
+        "default_time_per_question": 60,
+        "min_time_per_question": 10,
+        "max_time_per_question": 300
     }
 
 
@@ -344,8 +394,11 @@ async def start_quiz(config: QuizConfig):
         # Get random word pairs
         word_pairs = word_repo.get_random_pairs(config.count)
     
-    # Create session
-    session = session_manager.create_session(word_pairs, config.direction)
+    # Create session with time limit
+    session = session_manager.create_session(word_pairs, config.direction, config.time_per_question)
+    
+    # Start timer for first question
+    session.start_question(0)
     
     # Prepare questions
     questions = [session.get_question(i) for i in range(len(word_pairs))]
@@ -360,6 +413,7 @@ async def start_quiz(config: QuizConfig):
         session_id=session.session_id,
         total_questions=len(word_pairs),
         direction=config.direction,
+        time_per_question=config.time_per_question,
         questions=questions,
         word_pairs=word_pairs_dict
     )
@@ -387,8 +441,13 @@ async def submit_answer(session_id: str, answer_req: AnswerRequest):
     session = session_manager.get_session(session_id)
     
     try:
-        score, is_partial_credit = session.check_answer(answer_req.question_index, answer_req.answer)
+        score, is_partial_credit, timed_out = session.check_answer(answer_req.question_index, answer_req.answer)
         correct_answer = session.get_correct_answer(answer_req.question_index)
+        
+        # Start timer for next question if exists
+        next_index = answer_req.question_index + 1
+        if next_index < len(session.word_pairs):
+            session.start_question(next_index)
         
         # Calculate current score (sum of all scores, which can be 0.0, 0.5, or 1.0)
         answered = [a for a in session.answers if a is not None]
@@ -400,7 +459,8 @@ async def submit_answer(session_id: str, answer_req: AnswerRequest):
             correct_answer=correct_answer,
             current_score=total_score,
             total_answered=len(answered),
-            partial_credit=is_partial_credit
+            partial_credit=is_partial_credit,
+            timed_out=timed_out
         )
     except IndexError as e:
         raise HTTPException(status_code=400, detail=str(e))
