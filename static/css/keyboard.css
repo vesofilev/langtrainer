@@ -1,0 +1,282 @@
+/* ==================== Greek Virtual Keyboard ==================== */
+
+.greek-keyboard-container {
+    display: none;
+    margin-top: 15px;
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 15px;
+    border: 2px solid #e0e0e0;
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+.greek-keyboard-container.active {
+    display: block;
+    animation: slideDown 0.3s ease;
+}
+
+.keyboard-section {
+    margin-bottom: 12px;
+}
+
+.keyboard-section-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: #666;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    text-align: center;
+}
+
+.keyboard-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+    align-items: center;
+    justify-content: center;
+}
+
+.key-divider {
+    color: #ccc;
+    font-size: 20px;
+    margin: 0 4px;
+    user-select: none;
+}
+
+.greek-key {
+    background: white;
+    border: 2px solid #d0d0d0;
+    border-radius: 6px;
+    padding: 12px 14px;
+    min-width: 46px;
+    min-height: 46px;
+    text-align: center;
+    cursor: pointer;
+    font-size: 20px;
+    transition: all 0.2s;
+    user-select: none;
+    font-family: 'Times New Roman', serif;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.greek-key:hover {
+    background: #667eea;
+    color: white;
+    border-color: #667eea;
+    transform: translateY(-2px);
+}
+
+.greek-key:active {
+    transform: translateY(0);
+}
+
+.greek-key.wide {
+    min-width: 140px;
+    font-size: 14px;
+}
+
+.greek-key.shift-key {
+    background: #f0f0f0;
+    font-weight: 600;
+    min-width: 80px;
+}
+
+.greek-key.shift-key.active {
+    background: #667eea;
+    color: white;
+    border-color: #667eea;
+}
+
+.greek-key.shift-key:hover {
+    background: #667eea;
+    color: white;
+}
+
+.keyboard-toggle {
+    background: #6c757d;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    margin-top: 8px;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.keyboard-toggle:hover {
+    background: #5a6268;
+}
+
+.keyboard-toggle.active {
+    background: #667eea;
+}
+
+/* ==================== Autocomplete ==================== */
+
+.autocomplete-container {
+    position: relative;
+}
+
+.autocomplete-dropdown {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 2px solid #667eea;
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.autocomplete-dropdown.active {
+    display: block;
+}
+
+.autocomplete-item {
+    padding: 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #f0f0f0;
+    transition: background 0.2s;
+    font-size: 16px;
+}
+
+.autocomplete-item:hover {
+    background: #f0f0ff;
+}
+
+.autocomplete-item:last-child {
+    border-bottom: none;
+}
+
+.autocomplete-item .greek-text {
+    font-family: 'Times New Roman', serif;
+    font-size: 18px;
+    color: #333;
+    font-weight: 600;
+}
+
+.autocomplete-item .bulgarian-text {
+    font-size: 14px;
+    color: #666;
+    margin-top: 4px;
+}
+
+/* ==================== Diacritic Popup ==================== */
+
+.diacritic-popup {
+    display: none;
+    position: fixed;
+    background: white;
+    border: 2px solid #667eea;
+    border-radius: 8px;
+    padding: 12px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    z-index: 2000;
+    animation: popIn 0.2s ease;
+}
+
+.diacritic-popup.active {
+    display: block;
+}
+
+.diacritic-popup-title {
+    font-size: 11px;
+    color: #666;
+    margin-bottom: 8px;
+    text-align: center;
+    font-weight: 600;
+}
+
+.diacritic-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    max-width: 280px;
+}
+
+.diacritic-option {
+    background: white;
+    border: 2px solid #d0d0d0;
+    border-radius: 6px;
+    padding: 8px 10px;
+    cursor: pointer;
+    font-size: 20px;
+    font-family: 'Times New Roman', serif;
+    transition: all 0.2s;
+    min-width: 36px;
+    text-align: center;
+}
+
+.diacritic-option:hover {
+    background: #667eea;
+    color: white;
+    border-color: #667eea;
+    transform: scale(1.1);
+}
+
+/* ==================== Diacritic Toggle Buttons ==================== */
+
+.diacritic-btn {
+    background: white;
+    border: 3px solid #d0d0d0;
+    border-radius: 8px;
+    padding: 14px 16px;
+    min-width: 56px;
+    min-height: 56px;
+    text-align: center;
+    cursor: pointer;
+    font-size: 24px;
+    transition: all 0.2s;
+    user-select: none;
+    font-family: 'Times New Roman', serif;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+}
+
+.diacritic-btn:hover {
+    background: #e8edff;
+    border-color: #667eea;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(102, 126, 234, 0.2);
+}
+
+.diacritic-btn.active {
+    background: #667eea;
+    color: white;
+    border-color: #667eea;
+    box-shadow: 0 0 15px rgba(102, 126, 234, 0.5);
+    transform: scale(1.05);
+}
+
+.diacritic-btn:active {
+    transform: translateY(0) scale(1.02);
+}
+
+.vowel-key {
+    background: #fff8e1;
+    border-color: #ffb300;
+}
+
+.vowel-key:hover {
+    background: #ffa000;
+    color: white;
+    border-color: #ff8f00;
+}

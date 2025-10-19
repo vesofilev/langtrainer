@@ -1,0 +1,9 @@
+/* ==================== Screen Visibility ==================== */
+
+.setup-screen, .quiz-screen, .summary-screen, .training-screen {
+    display: none;
+}
+
+.setup-screen.active, .quiz-screen.active, .summary-screen.active, .training-screen.active {
+    display: block;
+}

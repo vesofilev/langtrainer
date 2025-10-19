@@ -6,7 +6,7 @@ import json
 import random
 import unicodedata
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 from uuid import uuid4
 from datetime import datetime, timedelta
 
@@ -27,13 +27,17 @@ class Direction:
 class WordPair(BaseModel):
     greek: str
     bulgarian: str
+    lesson: Optional[int] = None  # Add lesson field
 
 
 class QuizConfig(BaseModel):
-    count: int = Field(default=15, ge=1, le=50)
+    count: int = Field(default=15, ge=1, le=200)
     direction: str = Field(default=Direction.GREEK_TO_BULGARIAN)
     time_per_question: int = Field(default=60, ge=10, le=300)  # Time in seconds per question (10s to 5min)
-    word_pairs: Optional[List[Dict[str, str]]] = None  # For reusing specific words
+    word_pairs: Optional[List[Dict[str, Any]]] = None  # For reusing specific words (with lesson as int)
+    selected_lessons: Optional[List[int]] = None  # Selected lesson numbers
+    use_all_words: bool = False  # If True, use all available words from selected lessons
+    exclude_correct_words: Optional[List[Dict[str, Any]]] = None  # Words already answered correctly (to exclude)
 
 
 class QuizStartResponse(BaseModel):
@@ -42,7 +46,7 @@ class QuizStartResponse(BaseModel):
     direction: str
     time_per_question: int  # Time limit in seconds
     questions: List[Dict[str, str]]
-    word_pairs: List[Dict[str, str]]  # Return the word pairs used
+    word_pairs: List[Dict[str, Any]]  # Return the word pairs used (with lesson as int)
 
 
 class AnswerRequest(BaseModel):
@@ -77,6 +81,7 @@ class WordRepository:
     def __init__(self, data_path: str = "data/greek_words_standard.json"):
         self.data_path = Path(data_path)
         self.words: List[WordPair] = []
+        self.words_with_lessons: List[Dict] = []  # Store full data with lesson info
         self._load_words()
     
     def _load_words(self):
@@ -87,17 +92,39 @@ class WordRepository:
         with open(self.data_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
         
+        self.words_with_lessons = data  # Store complete data
         self.words = [
-            WordPair(greek=item["Лема"], bulgarian=item["Превод"])
+            WordPair(greek=item["Лема"], bulgarian=item["Превод"], lesson=item.get("Урок"))
             for item in data
         ]
         print(f"✓ Loaded {len(self.words)} word pairs")
     
-    def get_random_pairs(self, count: int) -> List[WordPair]:
-        """Get random word pairs without replacement"""
-        if count > len(self.words):
-            count = len(self.words)
-        return random.sample(self.words, count)
+    def get_available_lessons(self) -> List[int]:
+        """Get sorted list of all available lesson numbers"""
+        lessons = set(item.get("Урок") for item in self.words_with_lessons if "Урок" in item)
+        return sorted(lessons)
+    
+    def get_words_by_lessons(self, lesson_numbers: List[int]) -> List[WordPair]:
+        """Get all words from specific lessons"""
+        filtered_items = [
+            item for item in self.words_with_lessons
+            if item.get("Урок") in lesson_numbers
+        ]
+        return [
+            WordPair(greek=item["Лема"], bulgarian=item["Превод"], lesson=item.get("Урок"))
+            for item in filtered_items
+        ]
+    
+    def get_random_pairs(self, count: int, lesson_numbers: Optional[List[int]] = None) -> List[WordPair]:
+        """Get random word pairs without replacement, optionally filtered by lessons"""
+        if lesson_numbers:
+            available_words = self.get_words_by_lessons(lesson_numbers)
+        else:
+            available_words = self.words
+        
+        if count > len(available_words):
+            count = len(available_words)
+        return random.sample(available_words, count)
     
     @staticmethod
     def normalize_with_accents(text: str) -> str:
@@ -223,8 +250,9 @@ class QuizSession:
             if normalized_user_with_accents == normalized_correct_with_accents:
                 score = 1.0
             else:
-                # Check if it matches any comma-separated variant WITH accents
-                variants_with_accents = re.split(r',\s*(?![^()]*\))', correct_answer)
+                # Split by comma OR semicolon (both are used as separators in the data)
+                # Pattern: split by comma or semicolon, but not if inside parentheses
+                variants_with_accents = re.split(r'[,;]\s*(?![^()]*\))', correct_answer)
                 correct_variants_with_accents = [WordRepository.normalize_with_accents(v) for v in variants_with_accents]
                 if normalized_user_with_accents in correct_variants_with_accents:
                     score = 1.0
@@ -234,8 +262,8 @@ class QuizSession:
                     score = 0.5
                     is_partial_credit = True
                 else:
-                    # Check if user answer matches any comma-separated variant WITHOUT accents
-                    variants = re.split(r',\s*(?![^()]*\))', correct_answer)
+                    # Check if user answer matches any variant (comma or semicolon separated) WITHOUT accents
+                    variants = re.split(r'[,;]\s*(?![^()]*\))', correct_answer)
                     correct_variants = [WordRepository.normalize_answer(v) for v in variants]
                     if normalized_user in correct_variants:
                         # Correct except for accents - give partial credit
@@ -359,6 +387,7 @@ session_manager = SessionManager()
 @app.get("/api/config")
 async def get_config():
     """Get available configuration options"""
+    available_lessons = word_repo.get_available_lessons()
     return {
         "directions": [
             {"value": Direction.GREEK_TO_BULGARIAN, "label": "Ancient Greek → Bulgarian"},
@@ -366,17 +395,31 @@ async def get_config():
         ],
         "default_count": 15,
         "min_count": 1,
-        "max_count": min(50, len(word_repo.words)),
+        "max_count": min(200, len(word_repo.words)),
         "total_words": len(word_repo.words),
         "default_time_per_question": 60,
         "min_time_per_question": 10,
-        "max_time_per_question": 300
+        "max_time_per_question": 300,
+        "available_lessons": available_lessons
     }
+
+
+@app.post("/api/words-count")
+async def get_words_count(request: Dict):
+    """Get word count for selected lessons"""
+    selected_lessons = request.get("selected_lessons", [])
+    if selected_lessons is None or len(selected_lessons) == 0:
+        return {"count": 0}
+    
+    words = word_repo.get_words_by_lessons(selected_lessons)
+    return {"count": len(words)}
 
 
 @app.post("/api/quiz", response_model=QuizStartResponse)
 async def start_quiz(config: QuizConfig):
     """Start a new quiz session"""
+    print(f"[DEBUG] Received config: {config.model_dump()}")
+    
     # Validate direction
     if config.direction not in [Direction.GREEK_TO_BULGARIAN, Direction.BULGARIAN_TO_GREEK]:
         raise HTTPException(status_code=400, detail="Invalid direction")
@@ -385,17 +428,67 @@ async def start_quiz(config: QuizConfig):
     if config.word_pairs:
         # Reuse specific word pairs (for exam after training)
         word_pairs = [
-            WordPair(greek=wp["greek"], bulgarian=wp["bulgarian"])
+            WordPair(
+                greek=wp["greek"], 
+                bulgarian=wp["bulgarian"],
+                lesson=wp.get("lesson")
+            )
             for wp in config.word_pairs
         ]
         # Shuffle the word pairs to present them in a different order than training
         random.shuffle(word_pairs)
     else:
-        # Get random word pairs
-        word_pairs = word_repo.get_random_pairs(config.count)
+        # Get all available words from selected lessons
+        if config.selected_lessons:
+            available_words = word_repo.get_words_by_lessons(config.selected_lessons)
+        else:
+            available_words = word_repo.words
+        
+        # Filter out words that were already answered correctly
+        if config.exclude_correct_words:
+            print(f"[DEBUG] Excluding {len(config.exclude_correct_words)} correct words:")
+            for i, wp in enumerate(config.exclude_correct_words):
+                print(f"  [{i}] {wp['greek']} ↔ {wp['bulgarian']} (lesson {wp.get('lesson', '?')})")
+            
+            exclude_set = {
+                (wp["greek"], wp["bulgarian"]) 
+                for wp in config.exclude_correct_words
+            }
+            available_words = [
+                wp for wp in available_words 
+                if (wp.greek, wp.bulgarian) not in exclude_set
+            ]
+            print(f"[DEBUG] After exclusion: {len(available_words)} words available")
+        
+        # If all words have been mastered (filtered everything out), restart the cycle with all words
+        if len(available_words) == 0:
+            if config.selected_lessons:
+                available_words = word_repo.get_words_by_lessons(config.selected_lessons)
+            else:
+                available_words = word_repo.words
+            print(f"[INFO] All words mastered! Restarting with full word set: {len(available_words)} words")
+        
+        # Determine word count
+        if config.use_all_words:
+            word_count = len(available_words)
+        else:
+            word_count = min(config.count, len(available_words))
+        
+        # Get random word pairs from filtered available words
+        word_pairs = random.sample(available_words, word_count)
     
     # Create session with time limit
     session = session_manager.create_session(word_pairs, config.direction, config.time_per_question)
+    
+    # Debug logging for quiz start
+    print(f"\n[DEBUG] Quiz Started:")
+    print(f"  Session ID: {session.session_id}")
+    print(f"  Direction: {config.direction}")
+    print(f"  Word Count: {len(word_pairs)}")
+    print(f"  Time per Question: {config.time_per_question}s")
+    if config.selected_lessons:
+        print(f"  Selected Lessons: {sorted(config.selected_lessons)}")
+    print()
     
     # Start timer for first question
     session.start_question(0)
@@ -403,9 +496,9 @@ async def start_quiz(config: QuizConfig):
     # Prepare questions
     questions = [session.get_question(i) for i in range(len(word_pairs))]
     
-    # Return word pairs in response so they can be reused
+    # Return word pairs in response so they can be reused (including lesson info)
     word_pairs_dict = [
-        {"greek": wp.greek, "bulgarian": wp.bulgarian}
+        {"greek": wp.greek, "bulgarian": wp.bulgarian, "lesson": wp.lesson}
         for wp in word_pairs
     ]
     
@@ -470,7 +563,30 @@ async def submit_answer(session_id: str, answer_req: AnswerRequest):
 async def get_summary(session_id: str):
     """Get quiz summary"""
     session = session_manager.get_session(session_id)
-    return session.get_summary()
+    summary = session.get_summary()
+    
+    # Debug logging for quiz results
+    print(f"\n[DEBUG] Quiz Results for session {session_id}:")
+    print(f"  Direction: {session.direction}")
+    print(f"  Total Questions: {summary.total_questions}")
+    print(f"  Correct Answers: {summary.correct_count}")
+    print(f"  Score: {summary.score_percentage}%")
+    print(f"  Incorrect: {len(summary.incorrect_words)}")
+    print(f"  Partial Credit: {len(summary.partial_credit_words)}")
+    
+    if summary.incorrect_words:
+        print(f"\n  Incorrect Answers:")
+        for word in summary.incorrect_words:
+            print(f"    - {word['prompt']} → User: '{word['user_answer']}' | Correct: '{word['correct_answer']}'")
+    
+    if summary.partial_credit_words:
+        print(f"\n  Partial Credit Answers:")
+        for word in summary.partial_credit_words:
+            print(f"    - {word['prompt']} → User: '{word['user_answer']}' | Correct: '{word['correct_answer']}'")
+    
+    print()  # Empty line for readability
+    
+    return summary
 
 
 @app.delete("/api/quiz/{session_id}")
@@ -492,4 +608,4 @@ async def serve_frontend():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8001)
