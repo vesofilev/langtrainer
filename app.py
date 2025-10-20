@@ -534,8 +534,19 @@ async def submit_answer(session_id: str, answer_req: AnswerRequest):
     session = session_manager.get_session(session_id)
     
     try:
+        # Get the question being asked
+        question = session.get_question(answer_req.question_index)
+        
         score, is_partial_credit, timed_out = session.check_answer(answer_req.question_index, answer_req.answer)
         correct_answer = session.get_correct_answer(answer_req.question_index)
+        
+        # Log the question, student's answer, and result
+        status = "TIMED OUT" if timed_out else ("CORRECT" if score == 1.0 else ("PARTIAL CREDIT" if is_partial_credit else "WRONG"))
+        print(f"\n[STUDENT ANSWER] Session: {session_id[:8]}... | Q{answer_req.question_index + 1}")
+        print(f"  Question: {question['prompt']}")
+        print(f"  Student answered: '{answer_req.answer}'")
+        print(f"  Correct answer: '{correct_answer}'")
+        print(f"  Status: {status} (score: {score})")
         
         # Start timer for next question if exists
         next_index = answer_req.question_index + 1

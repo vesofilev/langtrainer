@@ -853,6 +853,7 @@ async function startQuizAfterTraining() {
         const data = await response.json();
         state.sessionId = data.session_id;
         state.questions = data.questions;
+        state.wordPairs = data.word_pairs;  // Update with shuffled order from server
         state.timePerQuestion = data.time_per_question; // Update from server
         state.currentIndex = 0;
         state.answers = [];
