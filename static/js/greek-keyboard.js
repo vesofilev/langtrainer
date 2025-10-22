@@ -590,13 +590,17 @@ document.addEventListener('click', function(e) {
     }
 });
 
-// Show/hide keyboard based on quiz direction
+// Show/hide keyboard based on quiz direction and language mode
 function updateKeyboardVisibility() {
     const keyboardToggle = document.getElementById('keyboardToggle');
     const autocompleteToggle = document.getElementById('autocompleteToggle');
     const keyboard = document.getElementById('greekKeyboard');
     
-    if (state.config && state.config.direction === 'bulgarian_to_greek') {
+    // Get current direction from state or direction select
+    const direction = state.currentDirection || document.getElementById('direction')?.value;
+    
+    // Show keyboard only for Bulgarian → Greek (Greek mode only)
+    if (state.languageMode === 'greek' && direction === 'bulgarian_to_greek') {
         keyboardToggle.style.display = 'inline-flex';
         autocompleteToggle.style.display = 'inline-flex';
         // Load words for autocomplete
@@ -607,6 +611,7 @@ function updateKeyboardVisibility() {
             }));
         }
     } else {
+        // Hide keyboard for Latin mode or Greek → Bulgarian direction
         keyboardToggle.style.display = 'none';
         autocompleteToggle.style.display = 'none';
         keyboard.classList.remove('active');
