@@ -4,6 +4,10 @@
         "la": "audituri eritis"
     },
     {
+        "bg": "беше моряк",
+        "la": "nauta erat"
+    },
+    {
         "bg": "Какво виждаш?",
         "la": "Quid vides?"
     },
@@ -266,5 +270,137 @@
     {
         "bg": "вечна слава",
         "la": "gloria aeterna"
+    },
+    {
+        "bg": "други видове",
+        "la": "alia genera"
+    },
+    {
+        "bg": "тежко се прие",
+        "la": "graviter acceptum est"
+    },
+    {
+        "bg": "богат на извори",
+        "la": "fontibus opulenta"
+    },
+    {
+        "bg": "с невероятно изкуство",
+        "la": "incredibili arte"
+    },
+    {
+        "bg": "с изключителна красота",
+        "la": "pulchritudine eximia"
+    },
+    {
+        "bg": "последен е построен",
+        "la": "postremus aedificatus est"
+    },
+    {
+        "bg": "по-добре учат",
+        "la": "melius discunt"
+    },
+    {
+        "bg": "направи!",
+        "la": "fac!"
+    },
+    {
+        "bg": "имат намерение да държат",
+        "la": "tenituri sunt"
+    },
+    {
+        "bg": "Кого виждаш?",
+        "la": "Quem vides?"
+    },
+    {
+        "bg": "Виждам, че господарят е добър.",
+        "la": "Video dominum bonum esse."
+    },
+    {
+        "bg": "искам да нося",
+        "la": "volo ferre"
+    },
+    {
+        "bg": "някой",
+        "la": "aliquis"
+    },
+    {
+        "bg": "провинциите на Рим",
+        "la": "provinciae Romae"
+    },
+    {
+        "bg": "не лови мухи",
+        "la": "muscas non capit"
+    },
+    {
+        "bg": "радват народа",
+        "la": "populum delectant"
+    },
+    {
+        "bg": "от яйцето до ябълките",
+        "la": "ab ovo usque ad mala"
+    },
+    {
+        "bg": "пълнят храма",
+        "la": "templum implent"
+    },
+    {
+        "bg": "не може да се купи",
+        "la": "emi non potest"
+    },
+    {
+        "bg": "красива книга",
+        "la": "liber pulcher"
+    },
+    {
+        "bg": "водим война",
+        "la": "bellum gerimus"
+    },
+    {
+        "bg": "не мога да живея",
+        "la": "vivere non possum"
+    },
+    {
+        "bg": "разделиха плячката",
+        "la": "praedam diviserunt"
+    },
+    {
+        "bg": "имаха право",
+        "la": "ius habebant"
+    },
+    {
+        "bg": "разруши гражданството",
+        "la": "civitatem delevit"
+    },
+    {
+        "bg": "дванадесет подвига",
+        "la": "duodecim labores"
+    },
+    {
+        "bg": "видях шествието",
+        "la": "pompam vidi"
+    },
+    {
+        "bg": "част от войската",
+        "la": "pars exercitus"
+    },
+    {
+        "bg": "с голяма сила",
+        "la": "magna vi"
+    },
+    {
+        "bg": "древните паметници",
+        "la": "monumenta antiqua"
+    },
+    {
+        "bg": "нова книга",
+        "la": "liber novus"
+    },
+    {
+        "bg": "най-пълен с риби",
+        "la": "plenissimus piscium "
+    },
+    {
+        "bg": "очите виждат",
+        "la": "oculi vident"
     }
 ]
