@@ -17,6 +17,13 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 
+# ==================== Helper Functions ====================
+
+def get_timestamp():
+    """Get current timestamp in readable format"""
+    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+
 # ==================== Models ====================
 
 class LanguageMode:
@@ -36,7 +43,7 @@ class WordPair(BaseModel):
     greek: Optional[str] = None
     latin: Optional[str] = None
     bulgarian: str
-    lesson: Optional[int] = None  # Add lesson field (only for Greek words)
+    lesson: Optional[float] = None  # Lesson field (only for Greek words) - supports 32.1, 32.2, etc.
     actual_direction: Optional[str] = None  # For mixed mode: tracks actual direction of this specific word
 
 
@@ -46,7 +53,7 @@ class QuizConfig(BaseModel):
     language_mode: str = Field(default=LanguageMode.GREEK)  # "greek" or "latin"
     time_per_question: int = Field(default=60, ge=10, le=300)  # Time in seconds per question (10s to 5min)
     word_pairs: Optional[List[Dict[str, Any]]] = None  # For reusing specific words (with lesson as int)
-    selected_lessons: Optional[List[int]] = None  # Selected lesson numbers (only for Greek)
+    selected_lessons: Optional[List[float]] = None  # Selected lesson numbers (only for Greek) - supports 32.1, 32.2, etc.
     use_all_words: bool = False  # If True, use all available words from selected lessons
     exclude_correct_words: Optional[List[Dict[str, Any]]] = None  # Words already answered correctly (to exclude)
 
@@ -115,7 +122,7 @@ class WordRepository:
     def _load_greek_words(self):
         """Load Greek words from JSON file"""
         if not self.greek_data_path.exists():
-            print(f"⚠️  Greek data file not found: {self.greek_data_path}")
+            print(f"[{get_timestamp()}] ⚠️  Greek data file not found: {self.greek_data_path}")
             return
         
         with open(self.greek_data_path, 'r', encoding='utf-8') as f:
@@ -126,7 +133,7 @@ class WordRepository:
             WordPair(greek=item["Лема"], bulgarian=item["Превод"], lesson=item.get("Урок"))
             for item in data
         ]
-        print(f"✓ Loaded {len(self.greek_words)} Greek word pairs")
+        print(f"[{get_timestamp()}] ✓ Loaded {len(self.greek_words)} Greek word pairs")
     
     def _load_latin_phrases(self):
         """Load Latin phrases from JSON files"""
@@ -138,9 +145,9 @@ class WordRepository:
                 WordPair(latin=item["la"], bulgarian=item["bg"])
                 for item in data
             ]
-            print(f"✓ Loaded {len(self.latin_la_bg)} Latin→Bulgarian phrases")
+            print(f"[{get_timestamp()}] ✓ Loaded {len(self.latin_la_bg)} Latin→Bulgarian phrases")
         else:
-            print(f"⚠️  Latin→Bulgarian data file not found: {self.latin_la_bg_path}")
+            print(f"[{get_timestamp()}] ⚠️  Latin→Bulgarian data file not found: {self.latin_la_bg_path}")
         
         # Load Bulgarian -> Latin
         if self.latin_bg_la_path.exists():
@@ -150,9 +157,9 @@ class WordRepository:
                 WordPair(latin=item["la"], bulgarian=item["bg"])
                 for item in data
             ]
-            print(f"✓ Loaded {len(self.latin_bg_la)} Bulgarian→Latin phrases")
+            print(f"[{get_timestamp()}] ✓ Loaded {len(self.latin_bg_la)} Bulgarian→Latin phrases")
         else:
-            print(f"⚠️  Bulgarian→Latin data file not found: {self.latin_bg_la_path}")
+            print(f"[{get_timestamp()}] ⚠️  Bulgarian→Latin data file not found: {self.latin_bg_la_path}")
     
     def get_words_for_language_and_direction(self, language_mode: str, direction: str) -> List[WordPair]:
         """Get words based on language mode and direction"""
@@ -169,13 +176,13 @@ class WordRepository:
                 return []
         return []
     
-    def get_available_lessons(self) -> List[int]:
+    def get_available_lessons(self) -> List[float]:
         """Get sorted list of all available lesson numbers (Greek only)"""
         lessons = set(item.get("Урок") for item in self.greek_words_with_lessons if "Урок" in item)
         return sorted(lessons)
     
-    def get_words_by_lessons(self, lesson_numbers: List[int]) -> List[WordPair]:
-        """Get all words from specific lessons (Greek only)"""
+    def get_words_by_lessons(self, lesson_numbers: List[float]) -> List[WordPair]:
+        """Get all words from specific lessons (Greek only) - supports both int (26, 27) and float (32.1, 32.2)"""
         filtered_items = [
             item for item in self.greek_words_with_lessons
             if item.get("Урок") in lesson_numbers
@@ -187,7 +194,7 @@ class WordRepository:
     
     def get_random_pairs(self, count: int, language_mode: str = LanguageMode.GREEK, 
                         direction: str = Direction.GREEK_TO_BULGARIAN,
-                        lesson_numbers: Optional[List[int]] = None) -> List[WordPair]:
+                        lesson_numbers: Optional[List[float]] = None) -> List[WordPair]:
         """Get random word pairs without replacement"""
         if language_mode == LanguageMode.GREEK:
             if lesson_numbers:
@@ -663,7 +670,7 @@ async def get_words_count(request: Dict):
 @app.post("/api/quiz", response_model=QuizStartResponse)
 async def start_quiz(config: QuizConfig):
     """Start a new quiz session"""
-    print(f"[DEBUG] Received config: {config.model_dump()}")
+    print(f"[{get_timestamp()}] [DEBUG] Received config: {config.model_dump()}")
     
     # Validate direction
     valid_directions = [
@@ -710,7 +717,7 @@ async def start_quiz(config: QuizConfig):
         
         # Filter out words that were already answered correctly
         if config.exclude_correct_words and available_words is not None:
-            print(f"[DEBUG] Excluding {len(config.exclude_correct_words)} correct words")
+            print(f"[{get_timestamp()}] [DEBUG] Excluding {len(config.exclude_correct_words)} correct words")
             
             if config.language_mode == LanguageMode.GREEK:
                 exclude_set = {
@@ -730,7 +737,7 @@ async def start_quiz(config: QuizConfig):
                     wp for wp in available_words 
                     if (wp.latin, wp.bulgarian) not in exclude_set
                 ]
-            print(f"[DEBUG] After exclusion: {len(available_words)} words available")
+            print(f"[{get_timestamp()}] [DEBUG] After exclusion: {len(available_words)} words available")
         
         # If all words have been mastered (filtered everything out), restart the cycle with all words
         if available_words is not None and len(available_words) == 0:
@@ -743,7 +750,7 @@ async def start_quiz(config: QuizConfig):
                 available_words = word_repo.get_words_for_language_and_direction(
                     config.language_mode, config.direction
                 )
-            print(f"[INFO] All words mastered! Restarting with full word set: {len(available_words)} words")
+            print(f"[{get_timestamp()}] [INFO] All words mastered! Restarting with full word set: {len(available_words)} words")
         
         # Special handling for Latin mixed mode
         if config.language_mode == LanguageMode.LATIN and config.direction == Direction.LATIN_MIXED:
@@ -753,7 +760,7 @@ async def start_quiz(config: QuizConfig):
             
             # Filter out correctly answered words if requested
             if config.exclude_correct_words:
-                print(f"[DEBUG] Excluding {len(config.exclude_correct_words)} correct words from mixed mode")
+                print(f"[{get_timestamp()}] [DEBUG] Excluding {len(config.exclude_correct_words)} correct words from mixed mode")
                 exclude_set = {
                     (wp.get("latin"), wp["bulgarian"]) 
                     for wp in config.exclude_correct_words
@@ -766,15 +773,15 @@ async def start_quiz(config: QuizConfig):
                     wp for wp in bg_la_words 
                     if (wp.latin, wp.bulgarian) not in exclude_set
                 ]
-                print(f"[DEBUG] After exclusion: {len(la_bg_words)} la→bg, {len(bg_la_words)} bg→la available")
+                print(f"[{get_timestamp()}] [DEBUG] After exclusion: {len(la_bg_words)} la→bg, {len(bg_la_words)} bg→la available")
             
             # If all words mastered in one or both directions, restart with full lists
             if len(la_bg_words) == 0:
                 la_bg_words = word_repo.latin_la_bg
-                print(f"[INFO] All la→bg words mastered! Restarting with full set: {len(la_bg_words)} words")
+                print(f"[{get_timestamp()}] [INFO] All la→bg words mastered! Restarting with full set: {len(la_bg_words)} words")
             if len(bg_la_words) == 0:
                 bg_la_words = word_repo.latin_bg_la
-                print(f"[INFO] All bg→la words mastered! Restarting with full set: {len(bg_la_words)} words")
+                print(f"[{get_timestamp()}] [INFO] All bg→la words mastered! Restarting with full set: {len(bg_la_words)} words")
             
             # Determine how many words we need from each direction
             if config.use_all_words:
@@ -804,7 +811,7 @@ async def start_quiz(config: QuizConfig):
                     wp.actual_direction = Direction.BULGARIAN_TO_LATIN
                     word_pairs.append(wp)
             
-            print(f"[DEBUG] Mixed mode: {len(sampled_la_bg)} la→bg + {len(sampled_bg_la)} bg→la = {len(word_pairs)} total")
+            print(f"[{get_timestamp()}] [DEBUG] Mixed mode: {len(sampled_la_bg)} la→bg + {len(sampled_bg_la)} bg→la = {len(word_pairs)} total")
         else:
             # Determine word count
             if config.use_all_words:
@@ -819,14 +826,14 @@ async def start_quiz(config: QuizConfig):
     session = session_manager.create_session(word_pairs, config.direction, config.time_per_question)
     
     # Debug logging for quiz start
-    print(f"\n[DEBUG] Quiz Started:")
-    print(f"  Session ID: {session.session_id}")
-    print(f"  Language Mode: {config.language_mode}")
-    print(f"  Direction: {config.direction}")
-    print(f"  Word Count: {len(word_pairs)}")
-    print(f"  Time per Question: {config.time_per_question}s")
+    print(f"\n[{get_timestamp()}] [DEBUG] Quiz Started:")
+    print(f"[{get_timestamp()}]   Session ID: {session.session_id}")
+    print(f"[{get_timestamp()}]   Language Mode: {config.language_mode}")
+    print(f"[{get_timestamp()}]   Direction: {config.direction}")
+    print(f"[{get_timestamp()}]   Word Count: {len(word_pairs)}")
+    print(f"[{get_timestamp()}]   Time per Question: {config.time_per_question}s")
     if config.selected_lessons and config.language_mode == LanguageMode.GREEK:
-        print(f"  Selected Lessons: {sorted(config.selected_lessons)}")
+        print(f"[{get_timestamp()}]   Selected Lessons: {sorted(config.selected_lessons)}")
     print()
     
     # Start timer for first question
@@ -894,11 +901,11 @@ async def submit_answer(session_id: str, answer_req: AnswerRequest):
         
         # Log the question, student's answer, and result
         status = "TIMED OUT" if timed_out else ("CORRECT" if score == 1.0 else ("PARTIAL CREDIT" if is_partial_credit else "WRONG"))
-        print(f"\n[STUDENT ANSWER] Session: {session_id[:8]}... | Q{answer_req.question_index + 1}")
-        print(f"  Question: {question['prompt']}")
-        print(f"  Student answered: '{answer_req.answer}'")
-        print(f"  Correct answer: '{correct_answer}'")
-        print(f"  Status: {status} (score: {score})")
+        print(f"\n[{get_timestamp()}] [STUDENT ANSWER] Session: {session_id[:8]}... | Q{answer_req.question_index + 1}")
+        print(f"[{get_timestamp()}]   Question: {question['prompt']}")
+        print(f"[{get_timestamp()}]   Student answered: '{answer_req.answer}'")
+        print(f"[{get_timestamp()}]   Correct answer: '{correct_answer}'")
+        print(f"[{get_timestamp()}]   Status: {status} (score: {score})")
         
         # Start timer for next question if exists
         next_index = answer_req.question_index + 1
@@ -929,23 +936,23 @@ async def get_summary(session_id: str):
     summary = session.get_summary()
     
     # Debug logging for quiz results
-    print(f"\n[DEBUG] Quiz Results for session {session_id}:")
-    print(f"  Direction: {session.direction}")
-    print(f"  Total Questions: {summary.total_questions}")
-    print(f"  Correct Answers: {summary.correct_count}")
-    print(f"  Score: {summary.score_percentage}%")
-    print(f"  Incorrect: {len(summary.incorrect_words)}")
-    print(f"  Partial Credit: {len(summary.partial_credit_words)}")
+    print(f"\n[{get_timestamp()}] [DEBUG] Quiz Results for session {session_id}:")
+    print(f"[{get_timestamp()}]   Direction: {session.direction}")
+    print(f"[{get_timestamp()}]   Total Questions: {summary.total_questions}")
+    print(f"[{get_timestamp()}]   Correct Answers: {summary.correct_count}")
+    print(f"[{get_timestamp()}]   Score: {summary.score_percentage}%")
+    print(f"[{get_timestamp()}]   Incorrect: {len(summary.incorrect_words)}")
+    print(f"[{get_timestamp()}]   Partial Credit: {len(summary.partial_credit_words)}")
     
     if summary.incorrect_words:
-        print(f"\n  Incorrect Answers:")
+        print(f"\n[{get_timestamp()}]   Incorrect Answers:")
         for word in summary.incorrect_words:
-            print(f"    - {word['prompt']} → User: '{word['user_answer']}' | Correct: '{word['correct_answer']}'")
+            print(f"[{get_timestamp()}]     - {word['prompt']} → User: '{word['user_answer']}' | Correct: '{word['correct_answer']}'")
     
     if summary.partial_credit_words:
-        print(f"\n  Partial Credit Answers:")
+        print(f"\n[{get_timestamp()}]   Partial Credit Answers:")
         for word in summary.partial_credit_words:
-            print(f"    - {word['prompt']} → User: '{word['user_answer']}' | Correct: '{word['correct_answer']}'")
+            print(f"[{get_timestamp()}]     - {word['prompt']} → User: '{word['user_answer']}' | Correct: '{word['correct_answer']}'")
     
     print()  # Empty line for readability
     
