@@ -73,6 +73,13 @@
                 </div>
             </div>
 
+            <div class="form-group">
+                <div class="checkbox-container">
+                    <input type="checkbox" id="randomOrder" checked>
+                    <label for="randomOrder">Random order</label>
+                </div>
+            </div>
+
             <div class="form-group" id="wordCountGroup">
                 <label for="wordCount">Number of Words:</label>
                 <input type="number" id="wordCount" min="1" max="200" value="15">
@@ -196,6 +203,7 @@
                         <button class="greek-key" data-lower="φ" data-upper="Φ" onclick="insertGreekLetter('φ', 'Φ')">φ</button>
                         <button class="greek-key" data-lower="χ" data-upper="Χ" onclick="insertGreekLetter('χ', 'Χ')">χ</button>
                         <button class="greek-key" data-lower="ψ" data-upper="Ψ" onclick="insertGreekLetter('ψ', 'Ψ')">ψ</button>
+                        <button class="greek-key" data-lower="ϡ" data-upper="Ϡ" onclick="insertGreekLetter('ϡ', 'Ϡ')">ϡ</button>
                     </div>
                 </div>
 
@@ -309,7 +317,7 @@
     </div>
 
     <!-- JavaScript Files -->
-    <script src="/static/js/app.js"></script>
+    <script src="/static/js/app.js?v=3"></script>
     <script src="/static/js/greek-keyboard.js"></script>
 </body>
 </html>

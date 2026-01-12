@@ -56,6 +56,7 @@ class QuizConfig(BaseModel):
     selected_lessons: Optional[List[float]] = None  # Selected lesson numbers (only for Greek) - supports 32.1, 32.2, etc.
     use_all_words: bool = False  # If True, use all available words from selected lessons
     exclude_correct_words: Optional[List[Dict[str, Any]]] = None  # Words already answered correctly (to exclude)
+    random_order: bool = True  # If True, randomize word order; if False, use sequential order
 
 
 class QuizStartResponse(BaseModel):
@@ -696,8 +697,9 @@ async def start_quiz(config: QuizConfig):
                     latin=wp.get("latin"),
                     bulgarian=wp["bulgarian"]
                 ))
-        # Shuffle the word pairs to present them in a different order than training
-        random.shuffle(word_pairs)
+        # Shuffle the word pairs to present them in a different order than training (if random order is enabled)
+        if config.random_order:
+            random.shuffle(word_pairs)
     else:
         # Get all available words based on language mode
         if config.language_mode == LanguageMode.GREEK:
@@ -793,9 +795,13 @@ async def start_quiz(config: QuizConfig):
                 count_la_bg = config.count // 2
                 count_bg_la = config.count - count_la_bg  # Remaining (handles odd numbers)
             
-            # Sample from each list
-            sampled_la_bg = random.sample(la_bg_words, min(count_la_bg, len(la_bg_words)))
-            sampled_bg_la = random.sample(bg_la_words, min(count_bg_la, len(bg_la_words)))
+            # Sample from each list - random or sequential based on config
+            if config.random_order:
+                sampled_la_bg = random.sample(la_bg_words, min(count_la_bg, len(la_bg_words)))
+                sampled_bg_la = random.sample(bg_la_words, min(count_bg_la, len(bg_la_words)))
+            else:
+                sampled_la_bg = la_bg_words[:count_la_bg]
+                sampled_bg_la = bg_la_words[:count_bg_la]
             
             # Interleave the two lists: la→bg, bg→la, la→bg, bg→la, ...
             # Mark each word with its actual direction so frontend knows how to save progress
@@ -819,8 +825,11 @@ async def start_quiz(config: QuizConfig):
             else:
                 word_count = min(config.count, len(available_words))
             
-            # Get random word pairs from filtered available words
-            word_pairs = random.sample(available_words, word_count)
+            # Get word pairs - random or sequential based on config
+            if config.random_order:
+                word_pairs = random.sample(available_words, word_count)
+            else:
+                word_pairs = available_words[:word_count]
     
     # Create session with time limit
     session = session_manager.create_session(word_pairs, config.direction, config.time_per_question)

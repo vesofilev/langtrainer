@@ -855,6 +855,8 @@ async function startSession() {
     let count = parseInt(document.getElementById('wordCount').value);
     const timePerQuestion = parseInt(document.getElementById('timePerQuestion').value);
     const useAllWords = document.getElementById('useAllWords').checked;
+    const randomOrderCheckbox = document.getElementById('randomOrder');
+    const randomOrder = randomOrderCheckbox ? randomOrderCheckbox.checked : true;
 
     // Validate lesson selection for Greek mode
     if (state.languageMode === 'greek' && state.selectedLessons.length === 0) {
@@ -935,7 +937,8 @@ async function startSession() {
             time_per_question: timePerQuestion,
             selected_lessons: state.languageMode === 'greek' ? state.selectedLessons : [],
             use_all_words: useAllWords,
-            exclude_correct_words: excludeWords
+            exclude_correct_words: excludeWords,
+            random_order: randomOrder
         };
         
         console.log('Starting session with config:', requestBody);
