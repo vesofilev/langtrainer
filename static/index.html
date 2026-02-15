@@ -8,7 +8,7 @@
     <!-- CSS Stylesheets -->
     <link rel="stylesheet" href="/static/css/main.css">
     <link rel="stylesheet" href="/static/css/animations.css">
-    <link rel="stylesheet" href="/static/css/components.css">
+    <link rel="stylesheet" href="/static/css/components.css?v=2">
     <link rel="stylesheet" href="/static/css/screens.css">
     <link rel="stylesheet" href="/static/css/modals.css">
     <link rel="stylesheet" href="/static/css/keyboard.css">
@@ -20,15 +20,25 @@
         <select id="languageMode" onchange="switchLanguageMode()">
             <option value="greek">🏛️ Ancient Greek</option>
             <option value="latin">🏟️ Latin</option>
+            <option value="literature">📖 Literature</option>
         </select>
     </div>
 
     <div class="container">
         <h1 id="appTitle">🏛️ Ancient Greek Trainer</h1>
-        <p class="subtitle">Test your vocabulary knowledge</p>
+        <p class="subtitle" id="appSubtitle">Test your vocabulary knowledge</p>
 
         <!-- Setup Screen -->
         <div class="setup-screen active" id="setupScreen">
+            <!-- Literature topic selection (shown only in literature mode) -->
+            <div class="form-group" id="topicsGroup" style="display: none;">
+                <label for="literatureTopic">Тема:</label>
+                <select id="literatureTopic" onchange="onLiteratureTopicChange()"></select>
+                <small style="color: #666; display: block; margin-top: 5px;">
+                    Въпроси: <strong id="literatureQuestionsCount">0</strong>
+                </small>
+            </div>
+
             <div class="form-group">
                 <label for="sessionMode">Session Mode:</label>
                 <select id="sessionMode">
@@ -93,7 +103,7 @@
                 </small>
             </div>
 
-            <button class="btn" onclick="startSession()">Start Session</button>
+            <button class="btn" id="startSessionBtn" onclick="startSession()">Start Session</button>
         </div>
 
         <!-- Training Screen -->
@@ -104,14 +114,14 @@
 
             <div class="question-counter" id="trainingCounter"></div>
 
-            <h2 style="text-align: center; color: #667eea; margin-bottom: 30px;">📚 Training Mode</h2>
+            <h2 id="trainingTitle" style="text-align: center; color: #667eea; margin-bottom: 30px;">📚 Training Mode</h2>
 
             <div class="question-box" style="background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);">
                 <div class="question-label" id="trainingPromptLabel"></div>
                 <div class="question-text" id="trainingPrompt" style="color: #667eea;"></div>
                 
                 <div style="margin: 30px 0; padding: 20px; background: white; border-radius: 8px; border: 2px solid #667eea;">
-                    <div style="font-size: 14px; color: #888; margin-bottom: 5px;">Translation:</div>
+                    <div id="trainingAnswerLabel" style="font-size: 14px; color: #888; margin-bottom: 5px;">Translation:</div>
                     <div id="trainingAnswer" style="font-size: 28px; font-weight: 600; color: #333;"></div>
                 </div>
             </div>
@@ -130,7 +140,7 @@
 
             <!-- Timer Display -->
             <div class="timer-container" id="timerContainer">
-                <div class="timer-label">Time Remaining:</div>
+                <div class="timer-label" id="timerLabel">Time Remaining:</div>
                 <div class="timer-display" id="timerDisplay">60</div>
             </div>
 
@@ -230,7 +240,7 @@
 
         <!-- Summary Screen -->
         <div class="summary-screen" id="summaryScreen">
-            <h2 style="text-align: center; margin-bottom: 30px; color: #667eea;">Quiz Complete! 🎉</h2>
+            <h2 id="summaryTitle" style="text-align: center; margin-bottom: 30px; color: #667eea;">Quiz Complete! 🎉</h2>
 
             <div class="stats-grid">
                 <div class="stat-card">
@@ -317,7 +327,7 @@
     </div>
 
     <!-- JavaScript Files -->
-    <script src="/static/js/app.js?v=3"></script>
+    <script src="/static/js/app.js?v=6"></script>
     <script src="/static/js/greek-keyboard.js"></script>
 </body>
 </html>

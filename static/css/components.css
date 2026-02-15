@@ -58,6 +58,14 @@ select:focus, input:focus {
     transform: translateY(0);
 }
 
+.btn.btn-loading,
+.btn:disabled {
+    opacity: 0.75;
+    cursor: progress;
+    transform: none;
+    box-shadow: none;
+}
+
 .btn-secondary {
     background: #6c757d;
     margin-top: 10px;
@@ -180,6 +188,30 @@ select:focus, input:focus {
 
 .feedback.hidden {
     display: none;
+}
+
+.feedback.loading {
+    background: #e7f1ff;
+    color: #0b3d91;
+    border: 2px solid #b6d4fe;
+}
+
+.feedback .spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    margin-right: 8px;
+    border: 2px solid rgba(11, 61, 145, 0.25);
+    border-top-color: rgba(11, 61, 145, 0.9);
+    border-radius: 50%;
+    vertical-align: -2px;
+    animation: spinnerRotate 0.8s linear infinite;
+}
+
+@keyframes spinnerRotate {
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 /* ==================== Timer ==================== */

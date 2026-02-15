@@ -3,12 +3,26 @@ Language Trainer Backend (Ancient Greek & Latin - Bulgarian)
 FastAPI application for vocabulary quiz
 """
 import json
+import os
 import random
 import unicodedata
 from pathlib import Path
 from typing import Dict, List, Optional, Any
 from uuid import uuid4
 from datetime import datetime, timedelta
+
+try:
+    from openai import OpenAI
+except Exception:  # pragma: no cover
+    OpenAI = None  # type: ignore
+
+try:
+    # Optional convenience: load OPENAI_API_KEY (and other settings) from .env
+    from dotenv import load_dotenv  # type: ignore
+
+    load_dotenv()
+except Exception:  # pragma: no cover
+    pass
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -29,6 +43,7 @@ def get_timestamp():
 class LanguageMode:
     GREEK = "greek"
     LATIN = "latin"
+    LITERATURE = "literature"
 
 
 class Direction:
@@ -37,6 +52,7 @@ class Direction:
     LATIN_TO_BULGARIAN = "latin_to_bulgarian"
     BULGARIAN_TO_LATIN = "bulgarian_to_latin"
     LATIN_MIXED = "latin_mixed"  # Combined la->bg and bg->la
+    LITERATURE_QA = "literature_qa"
 
 
 class WordPair(BaseModel):
@@ -58,13 +74,16 @@ class QuizConfig(BaseModel):
     exclude_correct_words: Optional[List[Dict[str, Any]]] = None  # Words already answered correctly (to exclude)
     random_order: bool = True  # If True, randomize word order; if False, use sequential order
 
+    # Literature mode
+    topic_id: Optional[str] = None
+
 
 class QuizStartResponse(BaseModel):
     session_id: str
     total_questions: int
     direction: str
     time_per_question: int  # Time limit in seconds
-    questions: List[Dict[str, str]]
+    questions: List[Dict[str, Any]]
     word_pairs: List[Dict[str, Any]]  # Return the word pairs used (with lesson as int)
 
 
@@ -82,14 +101,18 @@ class AnswerResponse(BaseModel):
     partial_credit: bool = False  # True if answer is correct except for accents
     timed_out: bool = False  # True if the answer was submitted after time expired
 
+    # Literature mode (LLM grading)
+    score_percent: Optional[int] = None
+    notes: Optional[str] = None
+
 
 class QuizSummary(BaseModel):
     session_id: str
     total_questions: int
     correct_count: int
     score_percentage: float
-    incorrect_words: List[Dict[str, str]]
-    partial_credit_words: List[Dict[str, str]] = []  # Words with accent errors
+    incorrect_words: List[Dict[str, Any]]
+    partial_credit_words: List[Dict[str, Any]] = []  # Words with accent errors
 
 
 # ==================== Repository ====================
@@ -239,6 +262,270 @@ class WordRepository:
         text = text.replace(';', ' ').replace(':', ' ')
         text = text.replace('  ', ' ')  # Double spaces to single
         return ' '.join(text.split())  # Remove all extra whitespace
+
+
+# ==================== Literature (BG) ====================
+
+LITERATURE_MASTERED_THRESHOLD = 85  # percent
+
+
+class LiteratureChoice(BaseModel):
+    key: str
+    text: str
+
+
+class LiteratureQuestion(BaseModel):
+    id: str
+    number: int
+    prompt: str
+    reference_answer: str
+    choices: Optional[List[LiteratureChoice]] = None
+    correct_choice: Optional[str] = None
+
+
+class LiteratureTopic(BaseModel):
+    topic_id: str
+    title: str
+    language: str = "bg"
+    source: Optional[str] = None
+    questions: List[LiteratureQuestion]
+
+
+class LiteratureRepository:
+    """Loads literature topics from JSON files under data/literature/*.json"""
+
+    def __init__(self, data_dir: str = "data/literature"):
+        self.data_dir = Path(data_dir)
+        self.topics: Dict[str, LiteratureTopic] = {}
+        self._load_topics()
+
+    def _load_topics(self) -> None:
+        if not self.data_dir.exists():
+            print(f"[{get_timestamp()}] ⚠️  Literature data dir not found: {self.data_dir}")
+            return
+
+        for path in sorted(self.data_dir.glob("*.json")):
+            try:
+                payload = json.loads(path.read_text(encoding="utf-8"))
+                topic = LiteratureTopic(**payload)
+                self.topics[topic.topic_id] = topic
+            except Exception as e:
+                print(f"[{get_timestamp()}] ⚠️  Failed loading literature topic {path}: {e}")
+
+        if self.topics:
+            print(f"[{get_timestamp()}] ✓ Loaded {len(self.topics)} literature topic(s)")
+
+    def list_topics(self) -> List[Dict[str, Any]]:
+        return [
+            {
+                "topic_id": t.topic_id,
+                "title": t.title,
+                "question_count": len(t.questions),
+            }
+            for t in self.topics.values()
+        ]
+
+    def get_topic(self, topic_id: str) -> LiteratureTopic:
+        if topic_id not in self.topics:
+            raise HTTPException(status_code=404, detail=f"Unknown literature topic: {topic_id}")
+        return self.topics[topic_id]
+
+    def get_question_count(self, topic_id: str) -> int:
+        return len(self.get_topic(topic_id).questions)
+
+    def get_questions(self, topic_id: str) -> List[LiteratureQuestion]:
+        return list(self.get_topic(topic_id).questions)
+
+    def get_questions_by_ids(self, topic_id: str, question_ids: List[str]) -> List[LiteratureQuestion]:
+        topic = self.get_topic(topic_id)
+        lookup = {q.id: q for q in topic.questions}
+        missing = [qid for qid in question_ids if qid not in lookup]
+        if missing:
+            raise HTTPException(status_code=400, detail=f"Unknown question id(s): {missing}")
+        return [lookup[qid] for qid in question_ids]
+
+
+class LiteratureOpenAIGrader:
+    """Grades open-ended answers against a gold reference using OpenAI Responses API."""
+
+    def __init__(self, model: str = "gpt-5.2"):
+        self.model = model
+
+    def _client(self):
+        if OpenAI is None:
+            raise HTTPException(status_code=500, detail="OpenAI SDK not installed")
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            raise HTTPException(status_code=500, detail="OPENAI_API_KEY is not set")
+        return OpenAI(api_key=api_key)
+
+    def grade(self, *, question: str, reference_answer: str, student_answer: str) -> tuple[int, str]:
+        """Return (score_percent, notes)"""
+        client = self._client()
+
+        system = (
+            "Ти си строг учител по литература (на български). "
+            "Оцени отговора на ученика спрямо ЕТАЛОННИЯ отговор. "
+            "Върни само валиден JSON с ключове: score_percent (0-100 цяло число) и notes (кратки бележки на български: какво липсва/какво да се подобри). "
+            "Не цитирай дълги пасажи; предпочитай пунктуални указания."
+        )
+
+        user = (
+            f"ВЪПРОС:\n{question}\n\n"
+            f"ЕТАЛОНЕН ОТГОВОР (златен стандарт):\n{reference_answer}\n\n"
+            f"ОТГОВОР НА УЧЕНИКА:\n{student_answer}\n\n"
+            "Оцени точно спрямо еталона."
+        )
+
+        resp = client.responses.create(
+            model=self.model,
+            input=[
+                {"role": "system", "content": system},
+                {"role": "user", "content": user},
+            ],
+            temperature=0.2,
+        )
+
+        text = getattr(resp, "output_text", None) or ""
+        text = text.strip()
+
+        # Try to parse JSON
+        try:
+            data = json.loads(text)
+            if not isinstance(data, dict):
+                # If the model returned a JSON array or other structure, treat it as notes.
+                score = 0
+                notes_obj = data
+            else:
+                score = int(max(0, min(100, data.get("score_percent", 0))))
+                notes_obj = data.get("notes", "")
+
+            # Normalize notes to a readable string.
+            if isinstance(notes_obj, list):
+                notes = "\n".join(str(x).strip() for x in notes_obj if str(x).strip()).strip()
+            elif isinstance(notes_obj, dict):
+                notes = json.dumps(notes_obj, ensure_ascii=False, indent=2).strip()
+            else:
+                notes = str(notes_obj).strip()
+            return score, notes
+        except Exception:
+            # Fallback: very conservative
+            return 0, "Грешка при оценяването: неуспешно парсване на отговор от модела."
+
+
+class LiteratureSession:
+    """Represents an active literature session (topic-based)."""
+
+    def __init__(self, session_id: str, topic_id: str, questions: List[LiteratureQuestion], direction: str, time_per_question: int,
+                 grader: LiteratureOpenAIGrader):
+        self.session_id = session_id
+        self.topic_id = topic_id
+        self.word_pairs = questions  # Keep attribute name for endpoint compatibility
+        self.direction = direction
+        self.time_per_question = time_per_question
+        self.answers: List[Optional[float]] = [None] * len(questions)
+        self.user_answers: List[str] = [""] * len(questions)
+        self.score_percents: List[Optional[int]] = [None] * len(questions)
+        self.notes: List[Optional[str]] = [None] * len(questions)
+        self.question_start_times: Dict[int, datetime] = {}
+        self._grader = grader
+
+    def start_question(self, index: int):
+        self.question_start_times[index] = datetime.now()
+
+    def is_timed_out(self, index: int) -> bool:
+        if index not in self.question_start_times:
+            return False
+        elapsed = datetime.now() - self.question_start_times[index]
+        return elapsed.total_seconds() > self.time_per_question
+
+    def get_question(self, index: int) -> Dict[str, str]:
+        if index >= len(self.word_pairs):
+            raise IndexError(f"Question index {index} out of range")
+        q = self.word_pairs[index]
+        payload: Dict[str, Any] = {
+            "question_id": q.id,
+            "prompt": q.prompt,
+            "prompt_label": "Въпрос",
+        }
+
+        if q.choices:
+            payload["question_type"] = "mcq"
+            payload["choices"] = [c.model_dump() for c in q.choices]
+        else:
+            payload["question_type"] = "open"
+
+        return payload
+
+    def get_correct_answer(self, index: int) -> str:
+        q = self.word_pairs[index]
+        return q.reference_answer
+
+    def check_answer(self, index: int, user_answer: str) -> tuple[float, bool, bool]:
+        if index >= len(self.word_pairs):
+            raise IndexError(f"Question index {index} out of range")
+
+        timed_out = self.is_timed_out(index)
+        self.user_answers[index] = user_answer
+
+        if timed_out:
+            self.answers[index] = 0.0
+            self.score_percents[index] = 0
+            self.notes[index] = "Времето изтече."
+            return 0.0, False, True
+
+        q = self.word_pairs[index]
+
+        # Multiple choice: deterministic grading
+        if q.choices and q.correct_choice:
+            given = (user_answer or "").strip().upper()
+            correct = q.correct_choice.strip().upper()
+            score = 100 if given == correct else 0
+            self.score_percents[index] = score
+            self.notes[index] = None if score == 100 else f"Правилен избор: {correct}."
+            self.answers[index] = score / 100.0
+            return self.answers[index] or 0.0, False, False
+
+        # Open-ended: LLM grading
+        score_percent, notes = self._grader.grade(
+            question=q.prompt,
+            reference_answer=q.reference_answer,
+            student_answer=user_answer,
+        )
+        self.score_percents[index] = score_percent
+        self.notes[index] = notes
+        self.answers[index] = score_percent / 100.0
+        return self.answers[index] or 0.0, False, False
+
+    def get_summary(self) -> QuizSummary:
+        total = len(self.word_pairs)
+        total_score = sum(ans for ans in self.answers if ans is not None)
+        score_percentage = (total_score / total * 100) if total > 0 else 0
+
+        # Consider "correct" if above threshold
+        correct_count = 0
+        incorrect_words: List[Dict[str, Any]] = []
+        for i, q in enumerate(self.word_pairs):
+            sp = self.score_percents[i] if self.score_percents[i] is not None else int((self.answers[i] or 0) * 100)
+            if sp >= LITERATURE_MASTERED_THRESHOLD:
+                correct_count += 1
+            else:
+                incorrect_words.append({
+                    "prompt": q.prompt,
+                    "correct_answer": q.reference_answer,
+                    "user_answer": self.user_answers[i],
+                    "score_percent": sp,
+                    "notes": self.notes[i],
+                })
+
+        return QuizSummary(
+            session_id=self.session_id,
+            total_questions=total,
+            correct_count=correct_count,
+            score_percentage=round(score_percentage, 1),
+            incorrect_words=incorrect_words,
+            partial_credit_words=[],
+        )
 
 
 # ==================== Quiz Session Manager ====================
@@ -564,16 +851,24 @@ class SessionManager:
     """Manages multiple quiz sessions"""
     
     def __init__(self):
-        self.sessions: Dict[str, QuizSession] = {}
+        self.sessions: Dict[str, Any] = {}
     
     def create_session(self, word_pairs: List[WordPair], direction: str, time_per_question: int = 60) -> QuizSession:
-        """Create a new quiz session"""
+        """Create a new vocabulary quiz session"""
         session_id = str(uuid4())
         session = QuizSession(session_id, word_pairs, direction, time_per_question)
         self.sessions[session_id] = session
         return session
+
+    def create_literature_session(self, topic_id: str, questions: List[LiteratureQuestion], direction: str,
+                                  time_per_question: int, grader: LiteratureOpenAIGrader) -> LiteratureSession:
+        """Create a new literature session"""
+        session_id = str(uuid4())
+        session = LiteratureSession(session_id, topic_id, questions, direction, time_per_question, grader)
+        self.sessions[session_id] = session
+        return session
     
-    def get_session(self, session_id: str) -> QuizSession:
+    def get_session(self, session_id: str) -> Any:
         """Retrieve a session by ID"""
         if session_id not in self.sessions:
             raise HTTPException(status_code=404, detail="Session not found")
@@ -604,6 +899,8 @@ app.add_middleware(
 
 # Initialize services
 word_repo = WordRepository()
+literature_repo = LiteratureRepository()
+literature_grader = LiteratureOpenAIGrader(model=os.getenv("LITERATURE_GRADING_MODEL", "gpt-5.2"))
 session_manager = SessionManager()
 
 
@@ -621,7 +918,7 @@ async def get_config(language_mode: str = LanguageMode.GREEK):
             {"value": Direction.BULGARIAN_TO_GREEK, "label": "Bulgarian → Ancient Greek"}
         ]
         has_lessons = True
-    else:  # Latin
+    elif language_mode == LanguageMode.LATIN:
         available_lessons = []
         total_words = len(word_repo.latin_la_bg) + len(word_repo.latin_bg_la)
         directions = [
@@ -630,8 +927,17 @@ async def get_config(language_mode: str = LanguageMode.GREEK):
             {"value": Direction.LATIN_MIXED, "label": "Mixed (Both Directions)"}
         ]
         has_lessons = False
+    elif language_mode == LanguageMode.LITERATURE:
+        available_lessons = []
+        total_words = 0
+        directions = [
+            {"value": Direction.LITERATURE_QA, "label": "Въпрос → Отговор"}
+        ]
+        has_lessons = False
+    else:
+        raise HTTPException(status_code=400, detail="Invalid language_mode")
     
-    return {
+    payload: Dict[str, Any] = {
         "language_mode": language_mode,
         "directions": directions,
         "default_count": 15,
@@ -645,6 +951,15 @@ async def get_config(language_mode: str = LanguageMode.GREEK):
         "has_lessons": has_lessons
     }
 
+    if language_mode == LanguageMode.LITERATURE:
+        topics = literature_repo.list_topics()
+        payload["topics"] = topics
+        payload["default_count"] = 10
+        payload["max_count"] = 200
+        payload["total_words"] = sum(t["question_count"] for t in topics)
+
+    return payload
+
 
 @app.post("/api/words-count")
 async def get_words_count(request: Dict):
@@ -657,7 +972,7 @@ async def get_words_count(request: Dict):
             return {"count": 0}
         words = word_repo.get_words_by_lessons(selected_lessons)
         return {"count": len(words)}
-    else:  # Latin
+    elif language_mode == LanguageMode.LATIN:
         direction = request.get("direction", Direction.LATIN_TO_BULGARIAN)
         if direction == Direction.LATIN_MIXED:
             # For mixed mode, return combined count from both directions
@@ -666,6 +981,13 @@ async def get_words_count(request: Dict):
         else:
             words = word_repo.get_words_for_language_and_direction(language_mode, direction)
             return {"count": len(words)}
+    elif language_mode == LanguageMode.LITERATURE:
+        topic_id = request.get("topic_id")
+        if not topic_id:
+            raise HTTPException(status_code=400, detail="topic_id is required for literature")
+        return {"count": literature_repo.get_question_count(topic_id)}
+    else:
+        raise HTTPException(status_code=400, detail="Invalid language_mode")
 
 
 @app.post("/api/quiz", response_model=QuizStartResponse)
@@ -676,10 +998,91 @@ async def start_quiz(config: QuizConfig):
     # Validate direction
     valid_directions = [
         Direction.GREEK_TO_BULGARIAN, Direction.BULGARIAN_TO_GREEK,
-        Direction.LATIN_TO_BULGARIAN, Direction.BULGARIAN_TO_LATIN, Direction.LATIN_MIXED
+        Direction.LATIN_TO_BULGARIAN, Direction.BULGARIAN_TO_LATIN, Direction.LATIN_MIXED,
+        Direction.LITERATURE_QA
     ]
     if config.direction not in valid_directions:
         raise HTTPException(status_code=400, detail="Invalid direction")
+
+    # ==================== Literature mode ====================
+    if config.language_mode == LanguageMode.LITERATURE:
+        if config.direction != Direction.LITERATURE_QA:
+            raise HTTPException(status_code=400, detail="Invalid direction for literature")
+
+        topic_id = config.topic_id
+
+        # Reuse question ids (exam after training)
+        if config.word_pairs:
+            if not topic_id:
+                topic_id = config.word_pairs[0].get("topic_id")
+            if not topic_id:
+                raise HTTPException(status_code=400, detail="topic_id is required for literature")
+
+            question_ids = [wp.get("question_id") for wp in config.word_pairs if wp.get("question_id")]
+            if not question_ids:
+                raise HTTPException(status_code=400, detail="No question_id provided")
+
+            selected_questions = literature_repo.get_questions_by_ids(topic_id, question_ids)
+            if config.random_order:
+                random.shuffle(selected_questions)
+        else:
+            if not topic_id:
+                raise HTTPException(status_code=400, detail="topic_id is required for literature")
+
+            available_questions = literature_repo.get_questions(topic_id)
+
+            # Exclude mastered
+            if config.exclude_correct_words:
+                exclude_ids = {
+                    wp.get("question_id")
+                    for wp in config.exclude_correct_words
+                    if wp.get("question_id")
+                }
+                available_questions = [q for q in available_questions if q.id not in exclude_ids]
+
+            if len(available_questions) == 0:
+                available_questions = literature_repo.get_questions(topic_id)
+                print(f"[{get_timestamp()}] [INFO] All questions mastered! Restarting with full question set: {len(available_questions)}")
+
+            if config.use_all_words:
+                selected_questions = list(available_questions)
+            else:
+                count = min(config.count, len(available_questions))
+                if config.random_order:
+                    selected_questions = random.sample(available_questions, count)
+                else:
+                    selected_questions = available_questions[:count]
+
+        session = session_manager.create_literature_session(
+            topic_id=topic_id,
+            questions=selected_questions,
+            direction=config.direction,
+            time_per_question=config.time_per_question,
+            grader=literature_grader,
+        )
+
+        print(f"\n[{get_timestamp()}] [DEBUG] Literature Quiz Started:")
+        print(f"[{get_timestamp()}]   Session ID: {session.session_id}")
+        print(f"[{get_timestamp()}]   Topic: {topic_id}")
+        print(f"[{get_timestamp()}]   Questions: {len(selected_questions)}")
+        print(f"[{get_timestamp()}]   Time per Question: {config.time_per_question}s\n")
+
+        session.start_question(0)
+
+        questions_payload = [session.get_question(i) for i in range(len(selected_questions))]
+        word_pairs_dict = [
+            {"topic_id": topic_id, "question_id": q.id}
+            for q in selected_questions
+        ]
+
+        return QuizStartResponse(
+            session_id=session.session_id,
+            total_questions=len(selected_questions),
+            direction=config.direction,
+            time_per_question=config.time_per_question,
+            questions=questions_payload,
+            word_pairs=word_pairs_dict,
+        )
     
     # Get word pairs - either from config (reusing) or randomly selected
     if config.word_pairs:
@@ -907,9 +1310,23 @@ async def submit_answer(session_id: str, answer_req: AnswerRequest):
         
         score, is_partial_credit, timed_out = session.check_answer(answer_req.question_index, answer_req.answer)
         correct_answer = session.get_correct_answer(answer_req.question_index)
+
+        # Literature extra fields (if present)
+        score_percent: Optional[int] = None
+        notes: Optional[str] = None
+        if hasattr(session, "score_percents"):
+            try:
+                score_percent = session.score_percents[answer_req.question_index]
+                notes = session.notes[answer_req.question_index]
+            except Exception:
+                score_percent = None
+                notes = None
         
         # Log the question, student's answer, and result
-        status = "TIMED OUT" if timed_out else ("CORRECT" if score == 1.0 else ("PARTIAL CREDIT" if is_partial_credit else "WRONG"))
+        if score_percent is not None:
+            status = "TIMED OUT" if timed_out else f"SCORE {score_percent}%"
+        else:
+            status = "TIMED OUT" if timed_out else ("CORRECT" if score == 1.0 else ("PARTIAL CREDIT" if is_partial_credit else "WRONG"))
         print(f"\n[{get_timestamp()}] [STUDENT ANSWER] Session: {session_id[:8]}... | Q{answer_req.question_index + 1}")
         print(f"[{get_timestamp()}]   Question: {question['prompt']}")
         print(f"[{get_timestamp()}]   Student answered: '{answer_req.answer}'")
@@ -925,14 +1342,20 @@ async def submit_answer(session_id: str, answer_req: AnswerRequest):
         answered = [a for a in session.answers if a is not None]
         total_score = sum(answered)
         
+        # Correctness rule: languages require 1.0; literature uses threshold
+        is_literature = score_percent is not None or getattr(session, "topic_id", None) is not None
+        correct_flag = (score_percent >= LITERATURE_MASTERED_THRESHOLD) if is_literature and score_percent is not None else (score == 1.0)
+
         return AnswerResponse(
-            correct=(score == 1.0),
+            correct=correct_flag,
             user_answer=answer_req.answer,
             correct_answer=correct_answer,
             current_score=total_score,
             total_answered=len(answered),
             partial_credit=is_partial_credit,
-            timed_out=timed_out
+            timed_out=timed_out,
+            score_percent=score_percent,
+            notes=notes,
         )
     except IndexError as e:
         raise HTTPException(status_code=400, detail=str(e))

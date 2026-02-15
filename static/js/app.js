@@ -15,7 +15,8 @@ const state = {
     selectedLessons: [], // Selected lesson numbers (Greek only)
     availableLessons: [], // All available lessons (Greek only)
     languageMode: 'greek', // 'greek' or 'latin'
-    currentDirection: 'greek_to_bulgarian' // Current quiz direction
+    currentDirection: 'greek_to_bulgarian', // Current quiz direction
+    literatureTopicId: null // Selected literature topic id (literature mode)
 };
 
 // API base URL
@@ -33,11 +34,36 @@ function getStorageKey() {
 // Create unique key for a word
 // Normalize by removing all non-word chars and converting to lowercase for consistency
 function createWordKey(word1, word2, lesson) {
-    const lang1 = state.languageMode === 'greek' ? 'greek' : 'latin';
-    const clean1 = word1.replace(/[^\wα-ωΑ-Ωa-zA-Z]/g, '').toLowerCase();
-    const clean2 = word2.replace(/[^\wа-яА-Яa-zA-Z]/g, '').toLowerCase();
+    // Literature progress is tracked by (topic_id, question_id) instead of free text.
+    // We overload the params as: word1 = question_id, lesson = topic_id.
+    if (state.languageMode === 'literature') {
+        const topicId = String(lesson ?? 'no-topic');
+        const questionId = String(word1 ?? 'no-question');
+        return `${topicId}_${questionId}`;
+    }
+
+    const clean1 = (word1 || '').replace(/[^\wα-ωΑ-Ωa-zA-Z]/g, '').toLowerCase();
+    const clean2 = (word2 || '').replace(/[^\wа-яА-Яa-zA-Z]/g, '').toLowerCase();
     const lessonPart = lesson !== undefined && lesson !== null ? `${lesson}_` : '';
     return `${lessonPart}${clean1}_${clean2}`;
+}
+
+// Get list of correctly answered literature questions for a topic
+function getCorrectLiteratureQuestions(topicId, direction) {
+    const progress = getProgressData();
+    const correct = [];
+
+    for (const key in progress.wordProgress) {
+        const entry = progress.wordProgress[key];
+        if (entry?.correct === true && entry.direction === direction && entry.topic_id === topicId) {
+            correct.push({
+                topic_id: entry.topic_id,
+                question_id: entry.question_id
+            });
+        }
+    }
+
+    return correct;
 }
 
 // Get progress data from localStorage
@@ -83,7 +109,8 @@ function saveProgressData(data) {
 
 // Reset all progress for current language mode
 function resetAllProgress() {
-    if (confirm(`Are you sure you want to reset ALL ${state.languageMode === 'greek' ? 'Greek' : 'Latin'} progress? This cannot be undone!`)) {
+    const modeLabel = state.languageMode === 'greek' ? 'Greek' : (state.languageMode === 'latin' ? 'Latin' : 'Literature');
+    if (confirm(`Are you sure you want to reset ALL ${modeLabel} progress? This cannot be undone!`)) {
         localStorage.removeItem(getStorageKey());
         console.log(`Progress reset for ${state.languageMode}`);
         updateProgressDisplay();
@@ -390,7 +417,7 @@ async function playErrorSound() {
 async function init() {
     // Restore previously selected language mode from localStorage
     const savedLanguageMode = localStorage.getItem('selectedLanguageMode');
-    if (savedLanguageMode && (savedLanguageMode === 'greek' || savedLanguageMode === 'latin')) {
+    if (savedLanguageMode && (savedLanguageMode === 'greek' || savedLanguageMode === 'latin' || savedLanguageMode === 'literature')) {
         const languageSelect = document.getElementById('languageMode');
         if (languageSelect) {
             languageSelect.value = savedLanguageMode;
@@ -413,12 +440,18 @@ async function switchLanguageMode() {
         const response = await fetch(`${API_BASE}/config?language_mode=${state.languageMode}`);
         state.config = await response.json();
         
-        // Update title
+        // Update title & subtitle
         const title = document.getElementById('appTitle');
+        const subtitle = document.getElementById('appSubtitle');
         if (state.languageMode === 'greek') {
             title.textContent = '🏛️ Ancient Greek Trainer';
-        } else {
+            if (subtitle) subtitle.textContent = 'Test your vocabulary knowledge';
+        } else if (state.languageMode === 'latin') {
             title.textContent = '🏟️ Latin Trainer';
+            if (subtitle) subtitle.textContent = 'Test your vocabulary knowledge';
+        } else {
+            title.textContent = '📖 Литература';
+            if (subtitle) subtitle.textContent = 'Отговори на въпроси и получи оценка';
         }
         
         // Update direction options
@@ -436,13 +469,103 @@ async function switchLanguageMode() {
         if (useAllWordsLabel) {
             if (state.languageMode === 'greek') {
                 useAllWordsLabel.textContent = 'Use all available words from selected lessons';
-            } else {
+            } else if (state.languageMode === 'latin') {
                 useAllWordsLabel.textContent = 'Use all available words';
+            } else {
+                useAllWordsLabel.textContent = 'Използвай всички въпроси по темата';
             }
         }
+
+        // Localize setup labels for literature
+        const sessionModeLabel = document.querySelector('label[for="sessionMode"]');
+        const directionLabel = document.querySelector('label[for="direction"]');
+        const wordCountLabel = document.querySelector('label[for="wordCount"]');
+        const timeLabel = document.querySelector('label[for="timePerQuestion"]');
+        const sessionModeSelect = document.getElementById('sessionMode');
+        if (state.languageMode === 'literature') {
+            if (sessionModeLabel) sessionModeLabel.textContent = 'Режим:';
+            if (directionLabel) directionLabel.textContent = 'Тип тест:';
+            if (wordCountLabel) wordCountLabel.textContent = 'Брой въпроси:';
+            if (timeLabel) timeLabel.textContent = 'Време за въпрос (секунди):';
+            if (sessionModeSelect) {
+                sessionModeSelect.options[0].textContent = 'Тренировка + Изпит';
+                sessionModeSelect.options[1].textContent = 'Само изпит';
+            }
+            const answerInput = document.getElementById('answerInput');
+            if (answerInput) answerInput.placeholder = 'Въведи отговор...';
+
+            const startBtn = document.getElementById('startSessionBtn');
+            if (startBtn) startBtn.textContent = 'Старт';
+            const trainingTitle = document.getElementById('trainingTitle');
+            if (trainingTitle) trainingTitle.textContent = '📚 Тренировка';
+            const summaryTitle = document.getElementById('summaryTitle');
+            if (summaryTitle) summaryTitle.textContent = 'Резултати 🎉';
+            const timerLabel = document.getElementById('timerLabel');
+            if (timerLabel) timerLabel.textContent = 'Оставащо време:';
+
+            const trainingAnswerLabel = document.getElementById('trainingAnswerLabel');
+            if (trainingAnswerLabel) trainingAnswerLabel.textContent = 'Еталонен отговор:';
+        } else {
+            if (sessionModeLabel) sessionModeLabel.textContent = 'Session Mode:';
+            if (directionLabel) directionLabel.textContent = 'Quiz Direction:';
+            if (wordCountLabel) wordCountLabel.textContent = 'Number of Words:';
+            if (timeLabel) timeLabel.textContent = 'Time per Question (seconds):';
+            if (sessionModeSelect) {
+                sessionModeSelect.options[0].textContent = 'Training + Exam';
+                sessionModeSelect.options[1].textContent = 'Exam Only';
+            }
+            const answerInput = document.getElementById('answerInput');
+            if (answerInput) answerInput.placeholder = 'Type your answer...';
+
+            const startBtn = document.getElementById('startSessionBtn');
+            if (startBtn) startBtn.textContent = 'Start Session';
+            const trainingTitle = document.getElementById('trainingTitle');
+            if (trainingTitle) trainingTitle.textContent = '📚 Training Mode';
+            const summaryTitle = document.getElementById('summaryTitle');
+            if (summaryTitle) summaryTitle.textContent = 'Quiz Complete! 🎉';
+            const timerLabel = document.getElementById('timerLabel');
+            if (timerLabel) timerLabel.textContent = 'Time Remaining:';
+
+            const trainingAnswerLabel = document.getElementById('trainingAnswerLabel');
+            if (trainingAnswerLabel) trainingAnswerLabel.textContent = 'Translation:';
+        }
         
-        // Show/hide lessons group based on whether language has lessons
+        // Show/hide lessons/topics group based on whether language has lessons
         const lessonsGroup = document.getElementById('lessonsGroup');
+        const topicsGroup = document.getElementById('topicsGroup');
+
+        if (state.languageMode === 'literature') {
+            if (topicsGroup) topicsGroup.style.display = 'block';
+            if (lessonsGroup) lessonsGroup.style.display = 'none';
+            state.availableLessons = [];
+            state.selectedLessons = [];
+
+            const topics = state.config.topics || [];
+            const topicSelect = document.getElementById('literatureTopic');
+            if (topicSelect) {
+                topicSelect.innerHTML = '';
+                topics.forEach(t => {
+                    const opt = document.createElement('option');
+                    opt.value = t.topic_id;
+                    opt.textContent = t.title;
+                    topicSelect.appendChild(opt);
+                });
+
+                const savedTopic = localStorage.getItem('selectedLiteratureTopicId');
+                if (savedTopic && topics.some(t => t.topic_id === savedTopic)) {
+                    topicSelect.value = savedTopic;
+                }
+                state.literatureTopicId = topicSelect.value || (topics[0]?.topic_id ?? null);
+                if (state.literatureTopicId) {
+                    localStorage.setItem('selectedLiteratureTopicId', state.literatureTopicId);
+                }
+            }
+
+            await onLiteratureTopicChange();
+        } else {
+            if (topicsGroup) topicsGroup.style.display = 'none';
+        }
+
         if (state.config.has_lessons) {
             lessonsGroup.style.display = 'block';
             state.availableLessons = state.config.available_lessons || [];
@@ -469,6 +592,42 @@ async function switchLanguageMode() {
     } catch (error) {
         console.error('Failed to load config:', error);
     }
+}
+
+// Handle literature topic change
+async function onLiteratureTopicChange() {
+    if (state.languageMode !== 'literature') return;
+    const topicSelect = document.getElementById('literatureTopic');
+    if (!topicSelect) return;
+
+    state.literatureTopicId = topicSelect.value || null;
+    if (state.literatureTopicId) {
+        localStorage.setItem('selectedLiteratureTopicId', state.literatureTopicId);
+    }
+
+    // Fetch question count for the selected topic
+    try {
+        const direction = document.getElementById('direction')?.value || 'literature_qa';
+        const resp = await fetch(`${API_BASE}/words-count`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                language_mode: state.languageMode,
+                direction,
+                topic_id: state.literatureTopicId
+            })
+        });
+        const data = await resp.json();
+        const countEl = document.getElementById('literatureQuestionsCount');
+        if (countEl) countEl.textContent = String(data.count || 0);
+    } catch (e) {
+        console.error('Failed to load literature question count:', e);
+        const countEl = document.getElementById('literatureQuestionsCount');
+        if (countEl) countEl.textContent = '0';
+    }
+
+    // Update progress display for this topic
+    updateProgressDisplay();
 }
 
 // Render lessons selector
@@ -650,6 +809,64 @@ async function updateProgressDisplay() {
         }
     }
     
+    // Handle Literature mode (topics)
+    if (state.languageMode === 'literature') {
+        if (!state.literatureTopicId) {
+            progressSummary.style.display = 'none';
+            return;
+        }
+
+        // Count mastered questions for current topic
+        let masteredCount = 0;
+        for (const key in progress.wordProgress) {
+            const entry = progress.wordProgress[key];
+            if (entry?.correct && entry.direction === direction && entry.topic_id === state.literatureTopicId) {
+                masteredCount++;
+            }
+        }
+
+        // Total questions in topic
+        let totalCount = 0;
+        try {
+            const response = await fetch(`${API_BASE}/words-count`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    language_mode: state.languageMode,
+                    direction: direction,
+                    topic_id: state.literatureTopicId
+                })
+            });
+            const data = await response.json();
+            totalCount = data.count || 0;
+        } catch (error) {
+            console.error('Failed to get literature question count:', error);
+        }
+
+        if (masteredCount === 0) {
+            progressSummary.style.display = 'none';
+            return;
+        }
+
+        const percentage = totalCount > 0 ? Math.round((masteredCount / totalCount) * 100) : 0;
+        let html = `<div style="margin-bottom: 5px;"><strong>Тема</strong>: ${state.literatureTopicId}</div>`;
+        html += `<div style="margin: 5px 0;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 3px;">
+                <span style="font-weight: 500;">Овладени: ${masteredCount}/${totalCount} (${percentage}%)</span>
+            </div>
+            <div style="width: 100%; height: 8px; background: #e0e0e0; border-radius: 4px; overflow: hidden;">
+                <div style="width: ${percentage}%; height: 100%; background: linear-gradient(90deg, #4caf50 0%, #66bb6a 100%); transition: width 0.3s ease;"></div>
+            </div>
+        </div>`;
+        html += `<div style="margin: 10px 0; display: flex; align-items: center;">
+            <button type="button" onclick="resetAllProgress()" style="padding: 2px 6px; font-size: 1.00em; background: #ff5252; color: white; border: none; border-radius: 3px; cursor: pointer;">🗑️ Reset Progress</button>
+        </div>`;
+
+        progressStats.innerHTML = html;
+        progressSummary.style.display = 'block';
+        return;
+    }
+
     // Handle Greek mode (with lessons)
     if (state.languageMode === 'greek') {
         if (state.selectedLessons.length === 0) {
@@ -864,18 +1081,25 @@ async function startSession() {
         return;
     }
 
+    // Validate topic selection for Literature mode
+    if (state.languageMode === 'literature' && !state.literatureTopicId) {
+        alert('Моля, изберете тема');
+        return;
+    }
+
     // Get available words count
     let availableWords;
     if (state.languageMode === 'greek') {
         availableWords = parseInt(document.getElementById('availableWordsCount').textContent) || 0;
     } else {
-        // For Latin, get count from API
+        // For Latin/Literature, get count from API
         const countResponse = await fetch(`${API_BASE}/words-count`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 language_mode: state.languageMode,
-                direction: direction
+                direction: direction,
+                topic_id: state.languageMode === 'literature' ? state.literatureTopicId : undefined
             })
         });
         const countData = await countResponse.json();
@@ -919,9 +1143,11 @@ async function startSession() {
     // Get list of words already answered correctly for this direction
     const excludeWords = state.languageMode === 'greek' 
         ? getCorrectWordsForLessons(state.selectedLessons, direction)
-        : (direction === 'latin_mixed' 
-            ? [...getCorrectWordsForDirection('latin_to_bulgarian'), ...getCorrectWordsForDirection('bulgarian_to_latin')]
-            : getCorrectWordsForDirection(direction));
+        : (state.languageMode === 'literature'
+            ? getCorrectLiteratureQuestions(state.literatureTopicId, direction)
+            : (direction === 'latin_mixed' 
+                ? [...getCorrectWordsForDirection('latin_to_bulgarian'), ...getCorrectWordsForDirection('bulgarian_to_latin')]
+                : getCorrectWordsForDirection(direction)));
     console.log(`Excluding ${excludeWords.length} correctly answered words`);
 
     // When use_all_words is true, count is ignored by backend, but we still need to send a valid value (>= 1)
@@ -936,6 +1162,7 @@ async function startSession() {
             count,
             time_per_question: timePerQuestion,
             selected_lessons: state.languageMode === 'greek' ? state.selectedLessons : [],
+            topic_id: state.languageMode === 'literature' ? state.literatureTopicId : null,
             use_all_words: useAllWords,
             exclude_correct_words: excludeWords,
             random_order: randomOrder
@@ -1053,7 +1280,9 @@ function displayTrainingWord() {
 
     document.getElementById('trainingProgressFill').style.width = progress + '%';
     document.getElementById('trainingCounter').textContent = 
-        `Word ${state.currentIndex + 1} of ${state.questions.length}`;
+        state.languageMode === 'literature'
+            ? `Въпрос ${state.currentIndex + 1} от ${state.questions.length}`
+            : `Word ${state.currentIndex + 1} of ${state.questions.length}`;
     document.getElementById('trainingPromptLabel').textContent = question.prompt_label;
     document.getElementById('trainingPrompt').textContent = question.prompt;
     
@@ -1062,9 +1291,9 @@ function displayTrainingWord() {
 
     const nextBtn = document.getElementById('trainingNextBtn');
     if (state.currentIndex === state.questions.length - 1) {
-        nextBtn.textContent = 'Start Exam';
+        nextBtn.textContent = state.languageMode === 'literature' ? 'Започни изпит' : 'Start Exam';
     } else {
-        nextBtn.textContent = 'Next Word';
+        nextBtn.textContent = state.languageMode === 'literature' ? 'Следващ' : 'Next Word';
     }
 }
 
@@ -1093,7 +1322,10 @@ function nextTrainingWord() {
 }
 
 function skipToExam() {
-    if (confirm('Are you sure you want to skip training and go directly to the exam?')) {
+    const msg = state.languageMode === 'literature'
+        ? 'Сигурни ли сте, че искате да пропуснете тренировката и да отидете директно на изпита?'
+        : 'Are you sure you want to skip training and go directly to the exam?';
+    if (confirm(msg)) {
         startExam();
     }
 }
@@ -1121,7 +1353,8 @@ async function startQuizAfterTraining() {
                 count: state.wordPairs.length,
                 word_pairs: state.wordPairs,  // Reuse the same words!
                 time_per_question: state.timePerQuestion,  // Keep same time limit
-                selected_lessons: state.selectedLessons  // Keep selected lessons
+                selected_lessons: state.languageMode === 'greek' ? state.selectedLessons : [],
+                topic_id: state.languageMode === 'literature' ? state.literatureTopicId : null
             })
         });
 
@@ -1172,13 +1405,61 @@ function displayQuestion() {
 
     document.getElementById('progressFill').style.width = progress + '%';
     document.getElementById('questionCounter').textContent = 
-        `Question ${state.currentIndex + 1} of ${state.questions.length}`;
+        state.languageMode === 'literature'
+            ? `Въпрос ${state.currentIndex + 1} от ${state.questions.length}`
+            : `Question ${state.currentIndex + 1} of ${state.questions.length}`;
     document.getElementById('questionLabel').textContent = question.prompt_label;
-    document.getElementById('questionText').textContent = question.prompt;
+
+    // Literature: support MCQ rendering
+    const questionTextEl = document.getElementById('questionText');
+    if (state.languageMode === 'literature' && Array.isArray(question.choices) && question.choices.length > 0) {
+        const escapeHtml = (s) => String(s)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+
+        const choicesHtml = question.choices.map(c => {
+            const key = escapeHtml(c.key);
+            const text = escapeHtml(c.text);
+            return `<div style="text-align:left; margin: 6px 0; padding: 10px 12px; border: 1px solid #e0e0e0; border-radius: 10px; background: #fff; cursor: pointer;" data-choice-key="${key}">
+                <strong>${key})</strong> ${text}
+            </div>`;
+        }).join('');
+
+        questionTextEl.innerHTML = `
+            <div style="margin-bottom: 14px;">${escapeHtml(question.prompt)}</div>
+            <div id="literatureChoices" style="margin-top: 10px;">${choicesHtml}</div>
+            <div style="margin-top: 10px; font-size: 12px; color:#666; text-align:left;">Избери опция или въведи буквата (А/Б/В/Г).</div>
+        `;
+
+        // Click-to-fill
+        const container = document.getElementById('literatureChoices');
+        if (container) {
+            container.querySelectorAll('[data-choice-key]')?.forEach(div => {
+                div.addEventListener('click', () => {
+                    const key = div.getAttribute('data-choice-key');
+                    const input = document.getElementById('answerInput');
+                    if (input && key) {
+                        input.value = key;
+                        input.focus();
+                    }
+                });
+            });
+        }
+
+        const answerInput = document.getElementById('answerInput');
+        if (answerInput) {
+            answerInput.placeholder = 'Въведи: А, Б, В или Г';
+        }
+    } else {
+        questionTextEl.textContent = question.prompt;
+    }
     document.getElementById('answerInput').value = '';
     document.getElementById('feedback').classList.add('hidden');
     document.getElementById('answerInput').focus();
-    document.getElementById('submitBtn').textContent = 'Submit Answer';
+    document.getElementById('submitBtn').textContent = state.languageMode === 'literature' ? 'Предай отговор' : 'Submit Answer';
     document.getElementById('submitBtn').onclick = () => submitAnswer(false);
     
     // Update keyboard visibility based on direction
@@ -1194,12 +1475,37 @@ async function submitAnswer(isTimeout = false) {
     stopTimer();
 
     const answer = isTimeout ? '' : document.getElementById('answerInput').value.trim();
+    const submitBtn = document.getElementById('submitBtn');
+    const answerInput = document.getElementById('answerInput');
+    const feedback = document.getElementById('feedback');
 
     if (!answer && !isTimeout) {
-        alert('Please enter an answer');
+        alert(state.languageMode === 'literature' ? 'Моля, въведете отговор' : 'Please enter an answer');
         // Restart timer if user didn't actually submit
         startTimer();
         return;
+    }
+
+    // Prevent double-submit
+    if (submitBtn?.disabled) return;
+
+    // Literature: show loading sandbox while waiting for LLM grading
+    if (state.languageMode === 'literature' && !isTimeout) {
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.classList.add('btn-loading');
+            submitBtn.textContent = 'Оценявам...';
+        }
+        if (answerInput) answerInput.disabled = true;
+        if (feedback) {
+            feedback.classList.remove('hidden', 'correct', 'incorrect', 'loading');
+            feedback.classList.add('loading');
+            feedback.innerHTML = `
+                <span class="spinner"></span>
+                🤖 Изчакване на оценка от модела...<br>
+                <small>Това може да отнеме няколко секунди.</small>
+            `;
+        }
     }
 
     try {
@@ -1218,21 +1524,78 @@ async function submitAnswer(isTimeout = false) {
 
         // Update button to "Next"
         document.getElementById('submitBtn').textContent = 
-            state.currentIndex < state.questions.length - 1 ? 'Next Question' : 'View Results';
+            state.currentIndex < state.questions.length - 1
+                ? (state.languageMode === 'literature' ? 'Следващ въпрос' : 'Next Question')
+                : (state.languageMode === 'literature' ? 'Виж резултати' : 'View Results');
         document.getElementById('submitBtn').onclick = nextQuestion;
     } catch (error) {
-        alert('Failed to submit answer: ' + error.message);
+        const msg = (state.languageMode === 'literature')
+            ? ('Грешка при оценяване: ' + error.message)
+            : ('Failed to submit answer: ' + error.message);
+        alert(msg);
+
+        // Restore input/button so user can retry
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('btn-loading');
+            submitBtn.textContent = state.languageMode === 'literature' ? 'Предай отговор' : 'Submit Answer';
+        }
+        if (answerInput) answerInput.disabled = false;
+    }
+    finally {
+        // Always clear loading state if it was set
+        if (state.languageMode === 'literature' && submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('btn-loading');
+        }
     }
 }
 
 // Display feedback
 function displayFeedback(result, wasTimeout = false) {
     const feedback = document.getElementById('feedback');
-    feedback.classList.remove('hidden', 'correct', 'incorrect');
+    feedback.classList.remove('hidden', 'correct', 'incorrect', 'loading');
 
     // Check timeout condition more carefully
     const isActualTimeout = (wasTimeout === true || result.timed_out === true);
     
+    // Literature mode feedback (LLM-graded)
+    if (state.languageMode === 'literature') {
+        if (isActualTimeout) {
+            feedback.classList.add('incorrect');
+            feedback.innerHTML = `
+                ⏰ Времето изтече!<br>
+                <small>Еталонен отговор:</small><br>
+                <small><strong>${result.correct_answer || ''}</strong></small>
+            `;
+            playErrorSound();
+        } else {
+            const scorePercent = (result.score_percent !== undefined && result.score_percent !== null)
+                ? result.score_percent
+                : (result.correct ? 100 : 0);
+            const masteredThreshold = 85;
+            const isGood = scorePercent >= masteredThreshold;
+
+            feedback.classList.add(isGood ? 'correct' : 'incorrect');
+            const notes = result.notes ? `<br><small>Бележки:</small><br><small style="white-space: pre-line;">${String(result.notes)}</small>` : '';
+            feedback.innerHTML = `
+                📊 Оценка: <strong>${scorePercent}%</strong>
+                ${notes}
+                <br><small>Еталонен отговор:</small><br>
+                <small><strong>${result.correct_answer || ''}</strong></small>
+            `;
+
+            if (isGood) {
+                playSuccessSound();
+            } else {
+                playErrorSound();
+            }
+        }
+
+        document.getElementById('answerInput').disabled = true;
+        return;
+    }
+
     if (isActualTimeout) {
         // Timeout feedback
         feedback.classList.add('incorrect');
@@ -1299,6 +1662,35 @@ async function showSummary() {
         // Display incorrect and partial credit words
         const incorrectList = document.getElementById('incorrectList');
         let html = '';
+
+        // Literature summary (LLM-graded)
+        if (state.languageMode === 'literature') {
+            if (summary.incorrect_words.length > 0) {
+                html += '<h3>Преглед на отговорите:</h3>';
+                summary.incorrect_words.forEach(item => {
+                    const score = (item.score_percent !== undefined && item.score_percent !== null)
+                        ? item.score_percent
+                        : 0;
+                    const notes = item.notes ? `<br><small style="color:#555;">Бележки: ${item.notes}</small>` : '';
+                    html += `
+                        <div class="incorrect-item">
+                            <strong>${item.prompt}</strong>
+                            <br><small>Оценка: <strong>${score}%</strong></small>
+                            <br><small style="color: #856404;">Твоят отговор: ${item.user_answer || '(няма отговор)'}</small>
+                            ${notes}
+                            <br><small>Еталонен отговор:</small>
+                            <br><small><strong>${item.correct_answer || ''}</strong></small>
+                        </div>
+                    `;
+                });
+            }
+
+            if (summary.incorrect_words.length === 0) {
+                html = '<p style="text-align: center; color: #28a745; font-weight: 600;">🎉 Отлично! Всички отговори са оценени като достатъчно добри.</p>';
+            }
+
+            incorrectList.innerHTML = html;
+        } else {
         
         // Show fully incorrect words
         if (summary.incorrect_words.length > 0) {
@@ -1332,6 +1724,7 @@ async function showSummary() {
         }
         
         incorrectList.innerHTML = html;
+        }
 
         // Show retake option if:
         // 1. User went through training (wasTrainingSession)
@@ -1372,9 +1765,9 @@ function saveQuizProgress(summary) {
     // state.answers[i].correct is true if fully correct, false if wrong
     // state.answers[i].partial_credit is true if accent/aspiration error
     state.wordPairs.forEach((wordPair, index) => {
-        const lesson = wordPair.lesson;
+        const lesson = state.languageMode === 'literature' ? wordPair.topic_id : wordPair.lesson;
         
-        // For Latin, lesson is not required
+        // For Greek, lesson is required
         if (state.languageMode === 'greek' && !lesson) {
             console.warn(`[Save Progress] Skipping word ${index}: No lesson info for`, wordPair);
             skippedCount++;
@@ -1394,13 +1787,21 @@ function saveQuizProgress(summary) {
         // Debug: log the full answer result
         console.log(`[Save Progress] Answer object for word ${index}:`, answerResult);
         
-        // A word is mastered only if it was answered 100% correctly
-        // Don't save partial credit (accent errors) as mastered
-        const wasFullyCorrect = answerResult.correct === true && !answerResult.partial_credit;
+        // Determine mastery
+        // - Language modes: mastered only if fully correct (not partial credit)
+        // - Literature: mastered if score_percent >= threshold
+        const LITERATURE_MASTERED_THRESHOLD = 85;
+        const wasFullyCorrect = state.languageMode === 'literature'
+            ? (answerResult.score_percent !== undefined && answerResult.score_percent !== null && answerResult.score_percent >= LITERATURE_MASTERED_THRESHOLD && answerResult.timed_out !== true)
+            : (answerResult.correct === true && !answerResult.partial_credit);
         
         // Get word1 and word2 based on language mode
-        const word1 = state.languageMode === 'greek' ? wordPair.greek : wordPair.latin;
-        const word2 = wordPair.bulgarian;
+        const word1 = state.languageMode === 'greek'
+            ? wordPair.greek
+            : (state.languageMode === 'latin'
+                ? wordPair.latin
+                : wordPair.question_id);
+        const word2 = state.languageMode === 'literature' ? '' : wordPair.bulgarian;
         
         console.log(`[Save Progress] Word ${index}: ${word1} ↔ ${word2}, Lesson ${lesson || 'N/A'}`);
         console.log(`[Save Progress]   - correct: ${answerResult.correct}, partial_credit: ${answerResult.partial_credit}, wasFullyCorrect: ${wasFullyCorrect}`);
@@ -1417,20 +1818,30 @@ function saveQuizProgress(summary) {
             console.warn(`[Save Progress]   - Mixed mode: actual_direction missing, using fallback index-based logic`);
         }
         
-        // Create unique key for this word
+        // Create unique key for this item
         const wordKey = createWordKey(word1, word2, lesson);
         const progressKey = `${actualDirection}_${lesson || 'no-lesson'}_${wordKey}`;
         
         if (wasFullyCorrect) {
-            // Mark word as correctly answered and mastered
-            progress.wordProgress[progressKey] = {
-                word1: word1,
-                word2: word2,
-                lesson: lesson,
-                direction: actualDirection,
-                correct: true,
-                lastSeen: new Date().toISOString()
-            };
+            // Mark as mastered
+            if (state.languageMode === 'literature') {
+                progress.wordProgress[progressKey] = {
+                    topic_id: wordPair.topic_id,
+                    question_id: wordPair.question_id,
+                    direction: actualDirection,
+                    correct: true,
+                    lastSeen: new Date().toISOString()
+                };
+            } else {
+                progress.wordProgress[progressKey] = {
+                    word1: word1,
+                    word2: word2,
+                    lesson: lesson,
+                    direction: actualDirection,
+                    correct: true,
+                    lastSeen: new Date().toISOString()
+                };
+            }
             correctlySavedCount++;
             console.log(`[Save Progress] ✓ Saved as mastered: ${progressKey}`);
         } else {

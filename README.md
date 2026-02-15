@@ -169,6 +169,21 @@ INFO:     Application startup complete.
 INFO:     Uvicorn running on http://0.0.0.0:8000
 ```
 
+## Literature Mode (LLM Grading)
+
+Literature mode grades open-ended answers via OpenAI.
+
+### Configure API key
+
+Set `OPENAI_API_KEY` for the process running the server.
+
+Recommended: create a local `.env` file:
+
+1. Copy [.env.example](.env.example) to `.env`
+2. Fill in `OPENAI_API_KEY=...`
+
+The app will automatically load `.env` at startup (via `python-dotenv`).
+
 ### Accessing the Application
 
 **Open your browser and navigate to:**
