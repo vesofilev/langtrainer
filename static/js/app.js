@@ -14,7 +14,7 @@ const state = {
     timerInterval: null, // Timer interval ID
     selectedLessons: [], // Selected lesson numbers (Greek only)
     availableLessons: [], // All available lessons (Greek only)
-    languageMode: 'greek', // 'greek' or 'latin'
+    languageMode: 'greek', // 'greek', 'latin', 'spanish', or 'literature'
     currentDirection: 'greek_to_bulgarian', // Current quiz direction
     literatureTopicId: null // Selected literature topic id (literature mode)
 };
@@ -42,8 +42,17 @@ function createWordKey(word1, word2, lesson) {
         return `${topicId}_${questionId}`;
     }
 
-    const clean1 = (word1 || '').replace(/[^\wα-ωΑ-Ωa-zA-Z]/g, '').toLowerCase();
-    const clean2 = (word2 || '').replace(/[^\wа-яА-Яa-zA-Z]/g, '').toLowerCase();
+    // Prefer Unicode-aware normalization to support Spanish (ñ, á, ¿, etc.) and Greek.
+    // Fallback to legacy regex if the runtime doesn't support Unicode property escapes.
+    let clean1 = '';
+    let clean2 = '';
+    try {
+        clean1 = (word1 || '').normalize('NFKD').replace(/[^\p{L}\p{N}]+/gu, '').toLowerCase();
+        clean2 = (word2 || '').normalize('NFKD').replace(/[^\p{L}\p{N}]+/gu, '').toLowerCase();
+    } catch (e) {
+        clean1 = (word1 || '').replace(/[^\wα-ωΑ-Ωa-zA-Z]/g, '').toLowerCase();
+        clean2 = (word2 || '').replace(/[^\wа-яА-Яa-zA-Z]/g, '').toLowerCase();
+    }
     const lessonPart = lesson !== undefined && lesson !== null ? `${lesson}_` : '';
     return `${lessonPart}${clean1}_${clean2}`;
 }
@@ -109,7 +118,13 @@ function saveProgressData(data) {
 
 // Reset all progress for current language mode
 function resetAllProgress() {
-    const modeLabel = state.languageMode === 'greek' ? 'Greek' : (state.languageMode === 'latin' ? 'Latin' : 'Literature');
+    const modeLabel = state.languageMode === 'greek'
+        ? 'Greek'
+        : (state.languageMode === 'latin'
+            ? 'Latin'
+            : (state.languageMode === 'spanish'
+                ? 'Spanish'
+                : 'Literature'));
     if (confirm(`Are you sure you want to reset ALL ${modeLabel} progress? This cannot be undone!`)) {
         localStorage.removeItem(getStorageKey());
         console.log(`Progress reset for ${state.languageMode}`);
@@ -158,7 +173,7 @@ function resetProgress(lessons, direction) {
                 keysToDelete.push(key);
             }
         } else {
-            // For Latin (no lessons), just match direction
+            // For Latin/Spanish (no lessons), just match direction
             if (entry.direction === direction) {
                 keysToDelete.push(key);
             }
@@ -183,7 +198,7 @@ function getProgressStats(lessons, direction, totalWords) {
                 correctCount++;
             }
         } else {
-            // For Latin (no lessons), just match direction
+            // For Latin/Spanish (no lessons), just match direction
             if (entry.direction === direction && entry.correct) {
                 correctCount++;
             }
@@ -206,16 +221,18 @@ function viewMasteredWords(lesson = null) {
     for (const key in progress.wordProgress) {
         const entry = progress.wordProgress[key];
         
-        // For Greek: filter by lesson
-        // For Latin: show all for current direction (lesson will be null)
-        const lessonMatch = state.languageMode === 'greek' 
-            ? (entry.lesson === lesson) 
+        // For lesson-based modes: filter by lesson
+        // For phrase modes: show all for current direction (lesson will be null)
+        const lessonMatch = (state.config && state.config.has_lessons)
+            ? (entry.lesson === lesson)
             : (lesson === null || lesson === undefined);
         
         // For mixed mode, include both directions
         let directionMatch;
         if (direction === 'latin_mixed') {
             directionMatch = (entry.direction === 'latin_to_bulgarian' || entry.direction === 'bulgarian_to_latin');
+        } else if (direction === 'spanish_mixed') {
+            directionMatch = (entry.direction === 'spanish_to_bulgarian' || entry.direction === 'bulgarian_to_spanish');
         } else {
             directionMatch = (entry.direction === direction);
         }
@@ -246,13 +263,21 @@ function viewMasteredWords(lesson = null) {
     if (state.languageMode === 'greek') {
         directionLabel = direction === 'greek_to_bulgarian' ? 
             'Greek → Bulgarian' : 'Bulgarian → Greek';
-    } else {
+    } else if (state.languageMode === 'latin') {
         if (direction === 'latin_to_bulgarian') {
             directionLabel = 'Latin → Bulgarian';
         } else if (direction === 'bulgarian_to_latin') {
             directionLabel = 'Bulgarian → Latin';
         } else {
             directionLabel = 'Latin Mixed';
+        }
+    } else if (state.languageMode === 'spanish') {
+        if (direction === 'spanish_to_bulgarian') {
+            directionLabel = 'Spanish → Bulgarian';
+        } else if (direction === 'bulgarian_to_spanish') {
+            directionLabel = 'Bulgarian → Spanish';
+        } else {
+            directionLabel = 'Spanish Mixed';
         }
     }
     
@@ -263,7 +288,7 @@ function viewMasteredWords(lesson = null) {
     
     // Hide/show direction filter dropdown (not needed for Latin since we already filter by direction)
     const directionFilterDiv = document.querySelector('#masteredWordsModal > .modal-content > div:first-of-type');
-    if (directionFilterDiv && state.languageMode === 'latin') {
+    if (directionFilterDiv && (state.languageMode === 'latin' || state.languageMode === 'spanish')) {
         directionFilterDiv.style.display = 'none';
     } else if (directionFilterDiv) {
         directionFilterDiv.style.display = 'block';
@@ -278,7 +303,7 @@ function viewMasteredWords(lesson = null) {
         `;
     } else {
         statsDivElement.innerHTML = `
-            <strong>${state.languageMode === 'latin' ? 'Latin' : 'Language'}</strong><br>
+            <strong>${state.languageMode === 'latin' ? 'Latin' : (state.languageMode === 'spanish' ? 'Spanish' : 'Language')}</strong><br>
             Direction: ${directionLabel}<br>
             Total mastered words: ${masteredWords.length}
         `;
@@ -296,7 +321,7 @@ function viewMasteredWords(lesson = null) {
         let questionWord, answerWord;
         
         // For mixed mode, use the actual direction of each word
-        const displayDirection = (direction === 'latin_mixed' && word.actualDirection) 
+        const displayDirection = ((direction === 'latin_mixed' || direction === 'spanish_mixed') && word.actualDirection) 
             ? word.actualDirection 
             : direction;
         
@@ -417,7 +442,7 @@ async function playErrorSound() {
 async function init() {
     // Restore previously selected language mode from localStorage
     const savedLanguageMode = localStorage.getItem('selectedLanguageMode');
-    if (savedLanguageMode && (savedLanguageMode === 'greek' || savedLanguageMode === 'latin' || savedLanguageMode === 'literature')) {
+    if (savedLanguageMode && (savedLanguageMode === 'greek' || savedLanguageMode === 'latin' || savedLanguageMode === 'spanish' || savedLanguageMode === 'literature')) {
         const languageSelect = document.getElementById('languageMode');
         if (languageSelect) {
             languageSelect.value = savedLanguageMode;
@@ -449,6 +474,9 @@ async function switchLanguageMode() {
         } else if (state.languageMode === 'latin') {
             title.textContent = '🏟️ Latin Trainer';
             if (subtitle) subtitle.textContent = 'Test your vocabulary knowledge';
+        } else if (state.languageMode === 'spanish') {
+            title.textContent = '🇪🇸 Spanish Trainer';
+            if (subtitle) subtitle.textContent = 'Test your vocabulary knowledge';
         } else {
             title.textContent = '📖 Литература';
             if (subtitle) subtitle.textContent = 'Отговори на въпроси и получи оценка';
@@ -469,7 +497,7 @@ async function switchLanguageMode() {
         if (useAllWordsLabel) {
             if (state.languageMode === 'greek') {
                 useAllWordsLabel.textContent = 'Use all available words from selected lessons';
-            } else if (state.languageMode === 'latin') {
+            } else if (state.languageMode === 'latin' || state.languageMode === 'spanish') {
                 useAllWordsLabel.textContent = 'Use all available words';
             } else {
                 useAllWordsLabel.textContent = 'Използвай всички въпроси по темата';
@@ -702,10 +730,15 @@ async function updateSelectedLessons() {
 // Update word count based on selected lessons
 async function updateWordCount() {
     try {
+        const direction = document.getElementById('direction')?.value;
         const response = await fetch(`${API_BASE}/words-count`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ selected_lessons: state.selectedLessons })
+            body: JSON.stringify({
+                language_mode: state.languageMode,
+                direction: direction,
+                selected_lessons: state.selectedLessons
+            })
         });
         const data = await response.json();
         
@@ -798,14 +831,21 @@ async function updateProgressDisplay() {
     if (state.languageMode === 'greek') {
         directionLabel = direction === 'greek_to_bulgarian' ? 
             'Greek → Bulgarian' : 'Bulgarian → Greek';
-    } else {
-        // Latin mode
+    } else if (state.languageMode === 'latin') {
         if (direction === 'latin_to_bulgarian') {
             directionLabel = 'Latin → Bulgarian';
         } else if (direction === 'bulgarian_to_latin') {
             directionLabel = 'Bulgarian → Latin';
         } else {
             directionLabel = 'Latin Mixed';
+        }
+    } else if (state.languageMode === 'spanish') {
+        if (direction === 'spanish_to_bulgarian') {
+            directionLabel = 'Spanish → Bulgarian';
+        } else if (direction === 'bulgarian_to_spanish') {
+            directionLabel = 'Bulgarian → Spanish';
+        } else {
+            directionLabel = 'Spanish Mixed';
         }
     }
     
@@ -867,8 +907,8 @@ async function updateProgressDisplay() {
         return;
     }
 
-    // Handle Greek mode (with lessons)
-    if (state.languageMode === 'greek') {
+    // Handle lesson-based modes (Greek / Spanish)
+    if (state.config && state.config.has_lessons) {
         if (state.selectedLessons.length === 0) {
             progressSummary.style.display = 'none';
             return;
@@ -945,20 +985,18 @@ async function updateProgressDisplay() {
         progressStats.innerHTML = html;
         progressSummary.style.display = 'block';
     } else {
-        // Latin mode (no lessons)
+        // Phrase modes (no lessons): Latin (and legacy Spanish)
         // Count mastered words for current direction
         let masteredCount = 0;
         for (const key in progress.wordProgress) {
             const entry = progress.wordProgress[key];
             // For mixed mode, count both directions
             if (direction === 'latin_mixed') {
-                if ((entry.direction === 'latin_to_bulgarian' || entry.direction === 'bulgarian_to_latin') && entry.correct) {
-                    masteredCount++;
-                }
-            } else {
-                if (entry.direction === direction && entry.correct) {
-                    masteredCount++;
-                }
+                if ((entry.direction === 'latin_to_bulgarian' || entry.direction === 'bulgarian_to_latin') && entry.correct) masteredCount++;
+            } else if (direction === 'spanish_mixed') {
+                if ((entry.direction === 'spanish_to_bulgarian' || entry.direction === 'bulgarian_to_spanish') && entry.correct) masteredCount++;
+            } else if (entry.direction === direction && entry.correct) {
+                masteredCount++;
             }
         }
         
@@ -977,7 +1015,7 @@ async function updateProgressDisplay() {
             const data = await response.json();
             totalCount = data.count;
         } catch (error) {
-            console.error('Failed to get Latin word count:', error);
+            console.error('Failed to get word count:', error);
         }
         
         // Check if any progress exists
@@ -1075,8 +1113,8 @@ async function startSession() {
     const randomOrderCheckbox = document.getElementById('randomOrder');
     const randomOrder = randomOrderCheckbox ? randomOrderCheckbox.checked : true;
 
-    // Validate lesson selection for Greek mode
-    if (state.languageMode === 'greek' && state.selectedLessons.length === 0) {
+    // Validate lesson selection for lesson-based modes (Greek / Spanish)
+    if (state.config && state.config.has_lessons && state.selectedLessons.length === 0) {
         alert('Please select at least one lesson');
         return;
     }
@@ -1089,10 +1127,10 @@ async function startSession() {
 
     // Get available words count
     let availableWords;
-    if (state.languageMode === 'greek') {
+    if (state.config && state.config.has_lessons) {
         availableWords = parseInt(document.getElementById('availableWordsCount').textContent) || 0;
     } else {
-        // For Latin/Literature, get count from API
+        // For Latin/Spanish/Literature, get count from API
         const countResponse = await fetch(`${API_BASE}/words-count`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -1141,13 +1179,15 @@ async function startSession() {
     state.timePerQuestion = timePerQuestion;
 
     // Get list of words already answered correctly for this direction
-    const excludeWords = state.languageMode === 'greek' 
+    const excludeWords = (state.config && state.config.has_lessons)
         ? getCorrectWordsForLessons(state.selectedLessons, direction)
         : (state.languageMode === 'literature'
             ? getCorrectLiteratureQuestions(state.literatureTopicId, direction)
             : (direction === 'latin_mixed' 
                 ? [...getCorrectWordsForDirection('latin_to_bulgarian'), ...getCorrectWordsForDirection('bulgarian_to_latin')]
-                : getCorrectWordsForDirection(direction)));
+                : (direction === 'spanish_mixed'
+                    ? [...getCorrectWordsForDirection('spanish_to_bulgarian'), ...getCorrectWordsForDirection('bulgarian_to_spanish')]
+                    : getCorrectWordsForDirection(direction))));
     console.log(`Excluding ${excludeWords.length} correctly answered words`);
 
     // When use_all_words is true, count is ignored by backend, but we still need to send a valid value (>= 1)
@@ -1161,7 +1201,7 @@ async function startSession() {
             direction,
             count,
             time_per_question: timePerQuestion,
-            selected_lessons: state.languageMode === 'greek' ? state.selectedLessons : [],
+            selected_lessons: (state.config && state.config.has_lessons) ? state.selectedLessons : [],
             topic_id: state.languageMode === 'literature' ? state.literatureTopicId : null,
             use_all_words: useAllWords,
             exclude_correct_words: excludeWords,
@@ -1238,6 +1278,7 @@ async function startSession() {
 function getCorrectWordsForLessons(lessons, direction) {
     const progress = getProgressData();
     const correctWords = [];
+    const foreignKey = state.languageMode === 'spanish' ? 'spanish' : 'greek';
     
     for (const key in progress.wordProgress) {
         const entry = progress.wordProgress[key];
@@ -1245,7 +1286,7 @@ function getCorrectWordsForLessons(lessons, direction) {
             entry.direction === direction && 
             lessons.includes(entry.lesson)) {
             correctWords.push({
-                greek: entry.word1,
+                [foreignKey]: entry.word1,
                 bulgarian: entry.word2,
                 lesson: entry.lesson
             });
@@ -1255,16 +1296,17 @@ function getCorrectWordsForLessons(lessons, direction) {
     return correctWords;
 }
 
-// Get list of correctly answered words for specific direction (Latin - no lessons)
+// Get list of correctly answered words for specific direction (phrase modes - no lessons)
 function getCorrectWordsForDirection(direction) {
     const progress = getProgressData();
     const correctWords = [];
+    const foreignKey = state.languageMode === 'spanish' ? 'spanish' : 'latin';
     
     for (const key in progress.wordProgress) {
         const entry = progress.wordProgress[key];
         if (entry.correct && entry.direction === direction) {
             correctWords.push({
-                latin: entry.word1,
+                [foreignKey]: entry.word1,
                 bulgarian: entry.word2
             });
         }
@@ -1353,7 +1395,7 @@ async function startQuizAfterTraining() {
                 count: state.wordPairs.length,
                 word_pairs: state.wordPairs,  // Reuse the same words!
                 time_per_question: state.timePerQuestion,  // Keep same time limit
-                selected_lessons: state.languageMode === 'greek' ? state.selectedLessons : [],
+                selected_lessons: (state.config && state.config.has_lessons) ? state.selectedLessons : [],
                 topic_id: state.languageMode === 'literature' ? state.literatureTopicId : null
             })
         });
@@ -1464,6 +1506,16 @@ function displayQuestion() {
     
     // Update keyboard visibility based on direction
     updateKeyboardVisibility();
+
+    // Start backend timer when the question is actually shown.
+    // This avoids server-side timeouts while the user is still on the feedback screen.
+    if (state.sessionId) {
+        fetch(`${API_BASE}/quiz/${state.sessionId}/question/${state.currentIndex}/start`, {
+            method: 'POST'
+        }).catch(() => {
+            // Best-effort: if this fails, backend will fallback to starting at submit time.
+        });
+    }
     
     // Start the timer for this question
     startTimer();
@@ -1767,8 +1819,8 @@ function saveQuizProgress(summary) {
     state.wordPairs.forEach((wordPair, index) => {
         const lesson = state.languageMode === 'literature' ? wordPair.topic_id : wordPair.lesson;
         
-        // For Greek, lesson is required
-        if (state.languageMode === 'greek' && !lesson) {
+        // For lesson-based modes, lesson is required
+        if ((state.config && state.config.has_lessons) && !lesson) {
             console.warn(`[Save Progress] Skipping word ${index}: No lesson info for`, wordPair);
             skippedCount++;
             return;
@@ -1800,7 +1852,9 @@ function saveQuizProgress(summary) {
             ? wordPair.greek
             : (state.languageMode === 'latin'
                 ? wordPair.latin
-                : wordPair.question_id);
+                : (state.languageMode === 'spanish'
+                    ? wordPair.spanish
+                    : wordPair.question_id));
         const word2 = state.languageMode === 'literature' ? '' : wordPair.bulgarian;
         
         console.log(`[Save Progress] Word ${index}: ${word1} ↔ ${word2}, Lesson ${lesson || 'N/A'}`);
@@ -1809,12 +1863,15 @@ function saveQuizProgress(summary) {
         // For mixed mode, use the actual_direction field from the word pair
         // This is set by the backend during interleaving, so it's accurate even when lists have different lengths
         let actualDirection = direction;
-        if (direction === 'latin_mixed' && wordPair.actual_direction) {
+        if ((direction === 'latin_mixed' || direction === 'spanish_mixed') && wordPair.actual_direction) {
             actualDirection = wordPair.actual_direction;
             console.log(`[Save Progress]   - Mixed mode: using actual_direction = ${actualDirection}`);
         } else if (direction === 'latin_mixed') {
             // Fallback to old logic if actual_direction not present (shouldn't happen with updated backend)
             actualDirection = (index % 2 === 0) ? 'latin_to_bulgarian' : 'bulgarian_to_latin';
+            console.warn(`[Save Progress]   - Mixed mode: actual_direction missing, using fallback index-based logic`);
+        } else if (direction === 'spanish_mixed') {
+            actualDirection = (index % 2 === 0) ? 'spanish_to_bulgarian' : 'bulgarian_to_spanish';
             console.warn(`[Save Progress]   - Mixed mode: actual_direction missing, using fallback index-based logic`);
         }
         

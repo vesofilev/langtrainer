@@ -27,7 +27,8 @@ python app.py
 - **Multiple Languages**:
   - **Ancient Greek** - Learn vocabulary with lesson-based organization (lessons 26-32)
   - **Latin** - Practice Latin phrases and expressions
-  - Language switcher to toggle between Greek and Latin modes
+  - **Spanish** - Practice Spanish phrases and expressions
+  - Language switcher to toggle between Greek, Latin and Spanish modes
 - **Two Session Modes**:
   - **Training + Exam**: First learn the words with their translations, then get tested on them
   - **Exam Only**: Jump straight into testing your knowledge
@@ -319,6 +320,19 @@ The application uses JSON files for vocabulary data:
         "la": "veni, vidi, vici",
         "bg": "дойдох, видях, победих"
     }
+]
+```
+
+### Spanish Phrases
+
+**Spanish (lesson-based, Greek-like format) (`data/spanish_words_standard.json`)**
+```json
+[
+  {
+    "Лема": "Hola",
+    "Превод": "Здравей",
+    "Урок": 1
+  }
 ]
 ```
 
