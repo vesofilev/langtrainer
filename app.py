@@ -133,13 +133,15 @@ class WordRepository:
                  spanish_data_path: str = "data/spanish_words_standard.json",
                  # Legacy Spanish phrase files (no lessons). Kept for backwards compatibility.
                  spanish_es_bg_path: str = "data/phrases_es_bg.json",
-                 spanish_bg_es_path: str = "data/phrases_bg_es.json"):
+                 spanish_bg_es_path: str = "data/phrases_bg_es.json",
+                 verse_lessons_config_path: str = "data/verse_lessons.json"):
         self.greek_data_path = Path(greek_data_path)
         self.latin_la_bg_path = Path(latin_la_bg_path)
         self.latin_bg_la_path = Path(latin_bg_la_path)
         self.spanish_data_path = Path(spanish_data_path)
         self.spanish_es_bg_path = Path(spanish_es_bg_path)
         self.spanish_bg_es_path = Path(spanish_bg_es_path)
+        self.verse_lessons_config_path = Path(verse_lessons_config_path)
         
         # Greek data
         self.greek_words: List[WordPair] = []
@@ -158,6 +160,9 @@ class WordRepository:
         # Spanish data (legacy format: two files, no lessons)
         self.spanish_es_bg: List[WordPair] = []  # Spanish -> Bulgarian
         self.spanish_bg_es: List[WordPair] = []  # Bulgarian -> Spanish
+
+        # Verse translation config
+        self.verse_lessons_config: List[Dict] = []  # [{lesson, title, language_mode, source}, ...]
         
         self._load_all_data()
     
@@ -166,6 +171,7 @@ class WordRepository:
         self._load_greek_words()
         self._load_latin_phrases()
         self._load_spanish_words()
+        self._load_verse_config()
 
         # Fallback to legacy Spanish phrase files if lesson-based file isn't present.
         if len(self.spanish_words) == 0:
@@ -301,6 +307,34 @@ class WordRepository:
             print(f"[{get_timestamp()}] ✓ Loaded {len(self.spanish_bg_es)} Bulgarian→Spanish phrases")
         else:
             print(f"[{get_timestamp()}] ⚠️  Bulgarian→Spanish data file not found: {self.spanish_bg_es_path}")
+
+    def _load_verse_config(self):
+        """Load verse-translation lesson configuration."""
+        if self.verse_lessons_config_path.exists():
+            with open(self.verse_lessons_config_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            self.verse_lessons_config = data.get("verse_lessons", [])
+            print(f"[{get_timestamp()}] ✓ Loaded {len(self.verse_lessons_config)} verse lesson config(s)")
+        else:
+            print(f"[{get_timestamp()}] ⚠️  Verse lessons config not found: {self.verse_lessons_config_path}")
+
+    def get_verse_lesson_numbers(self) -> List[float]:
+        """Return lesson numbers that support verse translation."""
+        return [entry["lesson"] for entry in self.verse_lessons_config]
+
+    def get_verse_lesson_info(self, lesson: float) -> Optional[Dict]:
+        """Get verse lesson metadata."""
+        for entry in self.verse_lessons_config:
+            if entry["lesson"] == lesson:
+                return entry
+        return None
+
+    def get_verse_lines(self, lesson: float) -> List[Dict]:
+        """Get all phrase lines for a verse lesson (from la->bg data) preserving order."""
+        return [
+            item for item in self.latin_la_bg_with_lessons
+            if item.get("Урок") == lesson
+        ]
     
     def get_words_for_language_and_direction(self, language_mode: str, direction: str) -> List[WordPair]:
         """Get words based on language mode and direction"""
@@ -396,6 +430,188 @@ class WordRepository:
 # ==================== Literature (BG) ====================
 
 LITERATURE_MASTERED_THRESHOLD = 85  # percent
+
+# ==================== Verse Translation ====================
+
+VERSE_MASTERED_THRESHOLD = 70  # percent – slightly lower since free-form translation is harder
+
+
+class VerseGroup(BaseModel):
+    """A group of consecutive verse lines presented as a single question."""
+    group_index: int
+    lines_la: List[str]
+    lines_bg: List[str]
+    words: Optional[List[Dict[str, str]]] = None  # vocabulary hints per line
+    start_line: int  # 0-based index in the full verse lesson
+    end_line: int    # exclusive
+
+
+class VerseTranslationGrader:
+    """Grades verse translation answers against a gold reference using OpenAI."""
+
+    def __init__(self, model: str = "gpt-5.2"):
+        self.model = model
+
+    def _client(self):
+        if OpenAI is None:
+            raise HTTPException(status_code=500, detail="OpenAI SDK not installed")
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            raise HTTPException(status_code=500, detail="OPENAI_API_KEY is not set")
+        return OpenAI(api_key=api_key)
+
+    def grade(self, *, latin_text: str, reference_translation: str, student_translation: str) -> tuple[int, str]:
+        """Return (score_percent, notes)"""
+        client = self._client()
+
+        system = (
+            "Ти си строг учител по латински език (на български). "
+            "Оцени превода на ученика от латински на български спрямо ЕТАЛОННИЯ превод. "
+            "Оценявай: точност на смисъла, пълнота, правилно предадени имена и термини. "
+            "Леки стилистични разлики са допустими – важното е смисълът да е предаден вярно. "
+            "Върни само валиден JSON с ключове: score_percent (0-100 цяло число) и notes (кратки бележки на български). "
+            "Не цитирай дълги пасажи; предпочитай пунктуални указания."
+        )
+
+        user = (
+            f"ЛАТИНСКИ ТЕКСТ:\n{latin_text}\n\n"
+            f"ЕТАЛОНЕН ПРЕВОД (златен стандарт):\n{reference_translation}\n\n"
+            f"ПРЕВОД НА УЧЕНИКА:\n{student_translation}\n\n"
+            "Оцени точно спрямо еталона."
+        )
+
+        resp = client.responses.create(
+            model=self.model,
+            input=[
+                {"role": "system", "content": system},
+                {"role": "user", "content": user},
+            ],
+            temperature=0.2,
+        )
+
+        text = getattr(resp, "output_text", None) or ""
+        text = text.strip()
+
+        try:
+            data = json.loads(text)
+            if not isinstance(data, dict):
+                score = 0
+                notes_obj = data
+            else:
+                score = int(max(0, min(100, data.get("score_percent", 0))))
+                notes_obj = data.get("notes", "")
+
+            if isinstance(notes_obj, list):
+                notes = "\n".join(str(x).strip() for x in notes_obj if str(x).strip()).strip()
+            elif isinstance(notes_obj, dict):
+                notes = json.dumps(notes_obj, ensure_ascii=False, indent=2).strip()
+            else:
+                notes = str(notes_obj).strip()
+            return score, notes
+        except Exception:
+            return 0, "Грешка при оценяването: неуспешно парсване на отговор от модела."
+
+
+class VerseTranslationSession:
+    """An active verse-translation quiz session."""
+
+    def __init__(self, session_id: str, lesson: float, groups: List[VerseGroup],
+                 time_per_question: int, grader: VerseTranslationGrader):
+        self.session_id = session_id
+        self.lesson = lesson
+        self.direction = "verse_translation"
+        self.word_pairs = groups  # compatibility with generic session handling
+        self.time_per_question = time_per_question
+        self.answers: List[Optional[float]] = [None] * len(groups)
+        self.user_answers: List[str] = [""] * len(groups)
+        self.score_percents: List[Optional[int]] = [None] * len(groups)
+        self.notes: List[Optional[str]] = [None] * len(groups)
+        self.question_start_times: Dict[int, datetime] = {}
+        self._grader = grader
+
+    # --- Timer helpers (same interface as other sessions) ---
+    def start_question(self, index: int):
+        self.question_start_times[index] = datetime.now()
+
+    def is_timed_out(self, index: int) -> bool:
+        if index not in self.question_start_times:
+            return False
+        elapsed = datetime.now() - self.question_start_times[index]
+        return elapsed.total_seconds() > self.time_per_question
+
+    # --- Question / answer ---
+    def get_question(self, index: int) -> Dict[str, Any]:
+        if index >= len(self.word_pairs):
+            raise IndexError(f"Question index {index} out of range")
+        g: VerseGroup = self.word_pairs[index]
+        return {
+            "question_id": str(index),
+            "prompt": "\n".join(g.lines_la),
+            "prompt_label": "Преведи от латински",
+            "question_type": "verse",
+            "words": [w for w in (g.words or []) if w],
+            "line_count": len(g.lines_la),
+        }
+
+    def get_correct_answer(self, index: int) -> str:
+        g: VerseGroup = self.word_pairs[index]
+        return "\n".join(g.lines_bg)
+
+    def check_answer(self, index: int, user_answer: str) -> tuple[float, bool, bool]:
+        if index >= len(self.word_pairs):
+            raise IndexError(f"Question index {index} out of range")
+
+        timed_out = self.is_timed_out(index)
+        self.user_answers[index] = user_answer
+
+        if timed_out:
+            self.answers[index] = 0.0
+            self.score_percents[index] = 0
+            self.notes[index] = "Времето изтече."
+            return 0.0, False, True
+
+        g: VerseGroup = self.word_pairs[index]
+        latin_text = "\n".join(g.lines_la)
+        reference = "\n".join(g.lines_bg)
+
+        score_percent, notes = self._grader.grade(
+            latin_text=latin_text,
+            reference_translation=reference,
+            student_translation=user_answer,
+        )
+        self.score_percents[index] = score_percent
+        self.notes[index] = notes
+        self.answers[index] = score_percent / 100.0
+        return self.answers[index] or 0.0, False, False
+
+    def get_summary(self) -> QuizSummary:
+        total = len(self.word_pairs)
+        total_score = sum(ans for ans in self.answers if ans is not None)
+        score_percentage = (total_score / total * 100) if total > 0 else 0
+
+        correct_count = 0
+        incorrect_words: List[Dict[str, Any]] = []
+        for i, g in enumerate(self.word_pairs):
+            sp = self.score_percents[i] if self.score_percents[i] is not None else int((self.answers[i] or 0) * 100)
+            if sp >= VERSE_MASTERED_THRESHOLD:
+                correct_count += 1
+            else:
+                incorrect_words.append({
+                    "prompt": "\n".join(g.lines_la),
+                    "correct_answer": "\n".join(g.lines_bg),
+                    "user_answer": self.user_answers[i],
+                    "score_percent": sp,
+                    "notes": self.notes[i],
+                })
+
+        return QuizSummary(
+            session_id=self.session_id,
+            total_questions=total,
+            correct_count=correct_count,
+            score_percentage=round(score_percentage, 1),
+            incorrect_words=incorrect_words,
+            partial_credit_words=[],
+        )
 
 
 class LiteratureChoice(BaseModel):
@@ -1110,6 +1326,14 @@ class SessionManager:
         session = LiteratureSession(session_id, topic_id, questions, direction, time_per_question, grader)
         self.sessions[session_id] = session
         return session
+
+    def create_verse_session(self, lesson: float, groups: List[VerseGroup],
+                             time_per_question: int, grader: VerseTranslationGrader) -> VerseTranslationSession:
+        """Create a new verse translation session"""
+        session_id = str(uuid4())
+        session = VerseTranslationSession(session_id, lesson, groups, time_per_question, grader)
+        self.sessions[session_id] = session
+        return session
     
     def get_session(self, session_id: str) -> Any:
         """Retrieve a session by ID"""
@@ -1144,6 +1368,7 @@ app.add_middleware(
 word_repo = WordRepository()
 literature_repo = LiteratureRepository()
 literature_grader = LiteratureOpenAIGrader(model=os.getenv("LITERATURE_GRADING_MODEL", "gpt-5.2"))
+verse_grader = VerseTranslationGrader(model=os.getenv("VERSE_GRADING_MODEL", os.getenv("LITERATURE_GRADING_MODEL", "gpt-5.2")))
 session_manager = SessionManager()
 
 
@@ -1216,6 +1441,10 @@ async def get_config(language_mode: str = LanguageMode.GREEK):
         payload["max_count"] = 200
         payload["total_words"] = sum(t["question_count"] for t in topics)
 
+    # Include verse-eligible lesson numbers for Latin mode
+    if language_mode == LanguageMode.LATIN:
+        payload["verse_lessons"] = word_repo.get_verse_lesson_numbers()
+
     return payload
 
 
@@ -1266,6 +1495,130 @@ async def get_words_count(request: Dict):
         return {"count": literature_repo.get_question_count(topic_id)}
     else:
         raise HTTPException(status_code=400, detail="Invalid language_mode")
+
+
+# ==================== Verse Translation Endpoints ====================
+
+@app.get("/api/verse-config")
+async def get_verse_config():
+    """Return list of verse-eligible lessons and their metadata."""
+    lessons = word_repo.verse_lessons_config
+    result = []
+    for entry in lessons:
+        lesson_num = entry["lesson"]
+        lines = word_repo.get_verse_lines(lesson_num)
+        result.append({
+            "lesson": lesson_num,
+            "title": entry.get("title", f"Урок {lesson_num}"),
+            "source": entry.get("source", ""),
+            "language_mode": entry.get("language_mode", "latin"),
+            "line_count": len(lines),
+        })
+    return {"verse_lessons": result}
+
+
+@app.post("/api/verse-quiz")
+async def start_verse_quiz(request: Dict):
+    """Create a verse translation session.
+
+    Expected body:
+    {
+        "lesson": 10.1,
+        "group_size": 4,
+        "ordering": "sequential" | "random",
+        "time_per_question": 120,
+        "skip_training": false
+    }
+    """
+    lesson = request.get("lesson")
+    if lesson is None:
+        raise HTTPException(status_code=400, detail="lesson is required")
+    lesson = float(lesson)
+
+    info = word_repo.get_verse_lesson_info(lesson)
+    if info is None:
+        raise HTTPException(status_code=404, detail=f"Lesson {lesson} is not a verse lesson")
+
+    group_size = int(request.get("group_size", 4))
+    if group_size < 1:
+        group_size = 1
+    ordering = request.get("ordering", "sequential")  # "sequential" or "random"
+    time_per_question = int(request.get("time_per_question", 120))
+    skip_training = bool(request.get("skip_training", False))
+
+    # Get all lines for this verse lesson (in order)
+    lines = word_repo.get_verse_lines(lesson)
+    if not lines:
+        raise HTTPException(status_code=404, detail=f"No verse lines found for lesson {lesson}")
+
+    total_lines = len(lines)
+
+    # Build groups
+    groups: List[VerseGroup] = []
+
+    if ordering == "random":
+        import random as _rand
+        # Pick random start indices; allow overlap
+        num_groups = max(1, total_lines // group_size)
+        for gi in range(num_groups):
+            start = _rand.randint(0, max(0, total_lines - group_size))
+            end = min(start + group_size, total_lines)
+            chunk = lines[start:end]
+            groups.append(VerseGroup(
+                group_index=gi,
+                lines_la=[c["la"] for c in chunk],
+                lines_bg=[c["bg"] for c in chunk],
+                words=[c.get("words") for c in chunk if c.get("words")],
+                start_line=start,
+                end_line=end,
+            ))
+        _rand.shuffle(groups)
+    else:
+        # Sequential: non-overlapping groups
+        gi = 0
+        for start in range(0, total_lines, group_size):
+            end = min(start + group_size, total_lines)
+            chunk = lines[start:end]
+            groups.append(VerseGroup(
+                group_index=gi,
+                lines_la=[c["la"] for c in chunk],
+                lines_bg=[c["bg"] for c in chunk],
+                words=[c.get("words") for c in chunk if c.get("words")],
+                start_line=start,
+                end_line=end,
+            ))
+            gi += 1
+
+    if not groups:
+        raise HTTPException(status_code=400, detail="Could not build any groups from verse data")
+
+    session = session_manager.create_verse_session(lesson, groups, time_per_question, verse_grader)
+
+    # Build questions list for the frontend (same shape as regular quiz)
+    questions = []
+    for i, g in enumerate(groups):
+        questions.append(session.get_question(i))
+
+    # Build word_pairs list for frontend progress saving
+    word_pairs = []
+    for g in groups:
+        word_pairs.append({
+            "latin": "\n".join(g.lines_la),
+            "bulgarian": "\n".join(g.lines_bg),
+            "lesson": lesson,
+            "actual_direction": "verse_translation",
+        })
+
+    return {
+        "session_id": session.session_id,
+        "questions": questions,
+        "total_questions": len(questions),
+        "word_pairs": word_pairs,
+        "time_per_question": time_per_question,
+        "lesson": lesson,
+        "title": info.get("title", f"Урок {lesson}"),
+        "skip_training": skip_training,
+    }
 
 
 @app.post("/api/quiz", response_model=QuizStartResponse)
@@ -1723,9 +2076,15 @@ async def submit_answer(session_id: str, answer_req: AnswerRequest):
         answered = [a for a in session.answers if a is not None]
         total_score = sum(answered)
         
-        # Correctness rule: languages require 1.0; literature uses threshold
-        is_literature = score_percent is not None or getattr(session, "topic_id", None) is not None
-        correct_flag = (score_percent >= LITERATURE_MASTERED_THRESHOLD) if is_literature and score_percent is not None else (score == 1.0)
+        # Correctness rule: languages require 1.0; literature/verse uses threshold
+        is_graded = score_percent is not None or getattr(session, "topic_id", None) is not None
+        if is_graded and score_percent is not None:
+            # Verse sessions use a lower threshold than literature
+            is_verse = getattr(session, "direction", None) == "verse_translation"
+            threshold = VERSE_MASTERED_THRESHOLD if is_verse else LITERATURE_MASTERED_THRESHOLD
+            correct_flag = score_percent >= threshold
+        else:
+            correct_flag = (score == 1.0)
 
         return AnswerResponse(
             correct=correct_flag,

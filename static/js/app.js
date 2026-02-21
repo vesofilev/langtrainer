@@ -16,7 +16,11 @@ const state = {
     availableLessons: [], // All available lessons (Greek only)
     languageMode: 'greek', // 'greek', 'latin', 'spanish', or 'literature'
     currentDirection: 'greek_to_bulgarian', // Current quiz direction
-    literatureTopicId: null // Selected literature topic id (literature mode)
+    literatureTopicId: null, // Selected literature topic id (literature mode)
+    // Verse translation state
+    isVerseMode: false,          // Whether we're in verse translation mode
+    verseConfig: null,           // Verse config from /api/verse-config
+    verseLesson: null,           // Selected verse lesson number
 };
 
 // API base URL
@@ -614,6 +618,9 @@ async function switchLanguageMode() {
         // Update keyboard visibility
         updateKeyboardVisibility();
         
+        // Load verse config for Latin mode and show/hide verse panel
+        await updateVersePanel();
+        
         // Update progress display
         updateProgressDisplay();
         
@@ -725,6 +732,9 @@ async function updateSelectedLessons() {
     
     // Update summary text
     updateSelectedLessonsSummary();
+    
+    // Refresh verse panel visibility
+    await updateVersePanel();
 }
 
 // Update word count based on selected lessons
@@ -1101,6 +1111,140 @@ async function handleTimeout() {
     await submitAnswer(true);
 }
 
+// ==================== Verse Translation Functions ====================
+
+async function updateVersePanel() {
+    const verseGroup = document.getElementById('verseTranslationGroup');
+    if (!verseGroup) return;
+
+    // Only show for Latin mode when verse lessons exist
+    if (state.languageMode === 'latin' && state.config && Array.isArray(state.config.verse_lessons) && state.config.verse_lessons.length > 0) {
+        // Check if any selected lesson is verse-eligible
+        const verseLessonNumbers = state.config.verse_lessons;
+        const hasVerseLesson = state.selectedLessons.some(l => verseLessonNumbers.includes(l));
+        
+        if (hasVerseLesson) {
+            // Fetch full verse config
+            try {
+                const resp = await fetch(`${API_BASE}/verse-config`);
+                const data = await resp.json();
+                state.verseConfig = data.verse_lessons || [];
+            } catch (e) {
+                console.error('Failed to load verse config:', e);
+                state.verseConfig = [];
+            }
+
+            // Populate verse lesson dropdown
+            const verseLessonSelect = document.getElementById('verseLesson');
+            if (verseLessonSelect) {
+                verseLessonSelect.innerHTML = '';
+                state.verseConfig.forEach(vl => {
+                    const opt = document.createElement('option');
+                    opt.value = vl.lesson;
+                    opt.textContent = `${vl.title} (${vl.line_count} стиха)`;
+                    verseLessonSelect.appendChild(opt);
+                });
+                state.verseLesson = state.verseConfig.length > 0 ? state.verseConfig[0].lesson : null;
+                onVerseLessonChange();
+            }
+
+            verseGroup.style.display = 'block';
+            return;
+        }
+    }
+
+    verseGroup.style.display = 'none';
+    state.verseConfig = null;
+    state.verseLesson = null;
+}
+
+function onVerseLessonChange() {
+    const select = document.getElementById('verseLesson');
+    if (!select) return;
+    state.verseLesson = parseFloat(select.value);
+
+    const info = (state.verseConfig || []).find(v => v.lesson === state.verseLesson);
+    const infoDiv = document.getElementById('verseInfo');
+    if (info && infoDiv) {
+        const groupSize = parseInt(document.getElementById('verseGroupSize')?.value || '4');
+        const numGroups = Math.ceil(info.line_count / groupSize);
+        infoDiv.textContent = `📏 ${info.line_count} стиха · ${numGroups} групи по ${groupSize} · ${info.source || ''}`;
+    }
+}
+
+async function startVerseSession() {
+    if (!state.verseLesson) {
+        alert('Моля, изберете стихотворен урок');
+        return;
+    }
+
+    const groupSize = parseInt(document.getElementById('verseGroupSize')?.value || '4');
+    const ordering = document.getElementById('verseOrdering')?.value || 'sequential';
+    const sessionMode = document.getElementById('verseSessionMode')?.value || 'training';
+    const timePerQuestion = parseInt(document.getElementById('verseTimePerQuestion')?.value || '120');
+
+    state.isVerseMode = true;
+    state.currentDirection = 'verse_translation';
+    state.timePerQuestion = timePerQuestion;
+
+    try {
+        const startBtn = document.getElementById('startVerseBtn');
+        if (startBtn) { startBtn.disabled = true; startBtn.textContent = '⏳ Зареждане...'; }
+
+        const response = await fetch(`${API_BASE}/verse-quiz`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                lesson: state.verseLesson,
+                group_size: groupSize,
+                ordering: ordering,
+                time_per_question: timePerQuestion,
+                skip_training: sessionMode === 'exam',
+            })
+        });
+
+        if (!response.ok) {
+            const errText = await response.text();
+            let msg = 'Грешка при стартиране на сесията.';
+            try { const e = JSON.parse(errText); if (e.detail) msg += ' ' + e.detail; } catch {}
+            alert(msg);
+            return;
+        }
+
+        const data = await response.json();
+        state.sessionId = data.session_id;
+        state.questions = data.questions;
+        state.wordPairs = data.word_pairs;
+        state.timePerQuestion = data.time_per_question;
+        state.currentIndex = 0;
+        state.answers = [];
+        state.trainingCompleted = false;
+        state.wasTrainingSession = (sessionMode === 'training');
+
+        if (sessionMode === 'training') {
+            state.mode = 'training';
+            // Set training screen labels for verse mode
+            const trainingTitle = document.getElementById('trainingTitle');
+            if (trainingTitle) trainingTitle.textContent = '📜 Тренировка — Превод на стихове';
+            const trainingAnswerLabel = document.getElementById('trainingAnswerLabel');
+            if (trainingAnswerLabel) trainingAnswerLabel.textContent = 'Еталонен превод:';
+            showScreen('trainingScreen');
+            displayTrainingWord();
+        } else {
+            state.mode = 'exam';
+            showScreen('quizScreen');
+            displayQuestion();
+        }
+    } catch (error) {
+        alert('Грешка: ' + error.message);
+    } finally {
+        const startBtn = document.getElementById('startVerseBtn');
+        if (startBtn) { startBtn.disabled = false; startBtn.textContent = '📜 Започни превод на стихове'; }
+    }
+}
+
+// ==================== End Verse Translation Functions ====================
+
 // Start session (training or exam)
 // Start session (training or exam)
 async function startSession() {
@@ -1330,19 +1474,40 @@ function getCorrectWordsForDirection(direction) {
 function displayTrainingWord() {
     const question = state.questions[state.currentIndex];
     const progress = ((state.currentIndex) / state.questions.length) * 100;
+    const isVerse = state.isVerseMode;
 
     document.getElementById('trainingProgressFill').style.width = progress + '%';
     document.getElementById('trainingCounter').textContent = 
-        state.languageMode === 'literature'
+        (state.languageMode === 'literature' || isVerse)
             ? `Въпрос ${state.currentIndex + 1} от ${state.questions.length}`
             : `Word ${state.currentIndex + 1} of ${state.questions.length}`;
     document.getElementById('trainingPromptLabel').textContent = question.prompt_label;
-    document.getElementById('trainingPrompt').textContent = question.prompt;
+
+    // Verse prompts contain newlines; render with line breaks
+    const promptEl = document.getElementById('trainingPrompt');
+    if (isVerse && question.prompt.includes('\n')) {
+        promptEl.innerHTML = question.prompt.split('\n').map(l => `<div>${l}</div>`).join('');
+    } else {
+        promptEl.textContent = question.prompt;
+    }
     
     // Show vocabulary words if present
     const wordsContainer = document.getElementById('trainingWordsContainer');
     const wordsList = document.getElementById('trainingWordsList');
-    if (question.words && Object.keys(question.words).length > 0) {
+
+    // Verse mode: words is an array of dicts [{key: val, ...}, ...]
+    if (isVerse && Array.isArray(question.words) && question.words.length > 0) {
+        const chips = [];
+        question.words.forEach(wordDict => {
+            if (wordDict && typeof wordDict === 'object') {
+                Object.entries(wordDict).forEach(([lat, bg]) => {
+                    chips.push(`<span style="display: inline-block; padding: 4px 10px; background: #e8eaf6; border-radius: 4px; font-size: 0.9em;"><strong>${lat}</strong> — ${bg}</span>`);
+                });
+            }
+        });
+        wordsList.innerHTML = chips.join('');
+        wordsContainer.style.display = chips.length > 0 ? 'block' : 'none';
+    } else if (question.words && typeof question.words === 'object' && !Array.isArray(question.words) && Object.keys(question.words).length > 0) {
         wordsList.innerHTML = Object.entries(question.words).map(([latin, bg]) => 
             `<span style="display: inline-block; padding: 4px 10px; background: #e8eaf6; border-radius: 4px; font-size: 0.9em;"><strong>${latin}</strong> — ${bg}</span>`
         ).join('');
@@ -1356,9 +1521,9 @@ function displayTrainingWord() {
 
     const nextBtn = document.getElementById('trainingNextBtn');
     if (state.currentIndex === state.questions.length - 1) {
-        nextBtn.textContent = state.languageMode === 'literature' ? 'Започни изпит' : 'Start Exam';
+        nextBtn.textContent = (state.languageMode === 'literature' || isVerse) ? 'Започни изпит' : 'Start Exam';
     } else {
-        nextBtn.textContent = state.languageMode === 'literature' ? 'Следващ' : 'Next Word';
+        nextBtn.textContent = (state.languageMode === 'literature' || isVerse) ? 'Следващ' : 'Next Word';
     }
 }
 
@@ -1368,7 +1533,13 @@ async function fetchCorrectAnswer() {
             `${API_BASE}/quiz/${state.sessionId}/question/${state.currentIndex}`
         );
         const data = await response.json();
-        document.getElementById('trainingAnswer').textContent = data.correct_answer;
+        const answerEl = document.getElementById('trainingAnswer');
+        // Verse answers may be multiline
+        if (state.isVerseMode && data.correct_answer && data.correct_answer.includes('\n')) {
+            answerEl.innerHTML = data.correct_answer.split('\n').map(l => `<div>${l}</div>`).join('');
+        } else {
+            answerEl.textContent = data.correct_answer;
+        }
     } catch (error) {
         console.error('Failed to fetch answer:', error);
         document.getElementById('trainingAnswer').textContent = '(Error loading answer)';
@@ -1387,7 +1558,8 @@ function nextTrainingWord() {
 }
 
 function skipToExam() {
-    const msg = state.languageMode === 'literature'
+    const isVerse = state.isVerseMode;
+    const msg = (state.languageMode === 'literature' || isVerse)
         ? 'Сигурни ли сте, че искате да пропуснете тренировката и да отидете директно на изпита?'
         : 'Are you sure you want to skip training and go directly to the exam?';
     if (confirm(msg)) {
@@ -1400,8 +1572,49 @@ function startExam() {
     state.currentIndex = 0;
     state.answers = [];
     
+    // For verse mode, create a new verse session
+    if (state.isVerseMode) {
+        startVerseExamAfterTraining();
+        return;
+    }
+    
     // Create new quiz session with same words
     startQuizAfterTraining();
+}
+
+async function startVerseExamAfterTraining() {
+    try {
+        // Create a new verse quiz session with same settings
+        const response = await fetch(`${API_BASE}/verse-quiz`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                lesson: state.verseLesson,
+                group_size: parseInt(document.getElementById('verseGroupSize')?.value || '4'),
+                ordering: document.getElementById('verseOrdering')?.value || 'sequential',
+                time_per_question: state.timePerQuestion,
+                skip_training: true,
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to start verse exam');
+        }
+
+        const data = await response.json();
+        state.sessionId = data.session_id;
+        state.questions = data.questions;
+        state.wordPairs = data.word_pairs;
+        state.timePerQuestion = data.time_per_question;
+        state.currentIndex = 0;
+        state.answers = [];
+
+        state.mode = 'exam';
+        showScreen('quizScreen');
+        displayQuestion();
+    } catch (error) {
+        alert('Грешка при стартиране на изпита: ' + error.message);
+    }
 }
 
 async function startQuizAfterTraining() {
@@ -1467,17 +1680,39 @@ async function startQuiz() {
 function displayQuestion() {
     const question = state.questions[state.currentIndex];
     const progress = ((state.currentIndex) / state.questions.length) * 100;
+    const isVerse = state.isVerseMode;
 
     document.getElementById('progressFill').style.width = progress + '%';
     document.getElementById('questionCounter').textContent = 
-        state.languageMode === 'literature'
+        (state.languageMode === 'literature' || isVerse)
             ? `Въпрос ${state.currentIndex + 1} от ${state.questions.length}`
             : `Question ${state.currentIndex + 1} of ${state.questions.length}`;
     document.getElementById('questionLabel').textContent = question.prompt_label;
 
-    // Literature: support MCQ rendering
+    // Show/hide verse textarea vs regular input
+    const answerInput = document.getElementById('answerInput');
+    const verseTextarea = document.getElementById('verseAnswerInput');
+    const autocompleteContainer = answerInput?.closest('.autocomplete-container');
+
+    if (isVerse) {
+        // Show textarea, hide regular input
+        if (autocompleteContainer) autocompleteContainer.style.display = 'none';
+        if (verseTextarea) { verseTextarea.style.display = 'block'; verseTextarea.value = ''; }
+    } else {
+        // Show regular input, hide textarea
+        if (autocompleteContainer) autocompleteContainer.style.display = '';
+        if (verseTextarea) verseTextarea.style.display = 'none';
+    }
+
+    // Render question prompt
     const questionTextEl = document.getElementById('questionText');
-    if (state.languageMode === 'literature' && Array.isArray(question.choices) && question.choices.length > 0) {
+
+    if (isVerse && question.prompt.includes('\n')) {
+        // Verse: render each line of Latin text
+        questionTextEl.innerHTML = question.prompt.split('\n').map(l =>
+            `<div style="text-align: left; margin: 4px 0; font-style: italic;">${l}</div>`
+        ).join('');
+    } else if (state.languageMode === 'literature' && Array.isArray(question.choices) && question.choices.length > 0) {
         const escapeHtml = (s) => String(s)
             .replace(/&/g, '&amp;')
             .replace(/</g, '&lt;')
@@ -1514,30 +1749,53 @@ function displayQuestion() {
             });
         }
 
-        const answerInput = document.getElementById('answerInput');
         if (answerInput) {
             answerInput.placeholder = 'Въведи: А, Б, В или Г';
         }
     } else {
         questionTextEl.textContent = question.prompt;
     }
-    document.getElementById('answerInput').value = '';
+
+    // Verse vocabulary hints in quiz mode
+    const quizWordsContainer = document.getElementById('quizWordsContainer');
+    const quizWordsList = document.getElementById('quizWordsList');
+    if (isVerse && Array.isArray(question.words) && question.words.length > 0) {
+        const chips = [];
+        question.words.forEach(wordDict => {
+            if (wordDict && typeof wordDict === 'object') {
+                Object.entries(wordDict).forEach(([lat, bg]) => {
+                    chips.push(`<span style="display: inline-block; padding: 3px 8px; background: #e8eaf6; border-radius: 4px; font-size: 0.85em;"><strong>${lat}</strong> — ${bg}</span>`);
+                });
+            }
+        });
+        if (quizWordsList) quizWordsList.innerHTML = chips.join('');
+        if (quizWordsContainer) quizWordsContainer.style.display = chips.length > 0 ? 'block' : 'none';
+    } else {
+        if (quizWordsContainer) quizWordsContainer.style.display = 'none';
+    }
+
+    if (!isVerse) {
+        document.getElementById('answerInput').value = '';
+    }
     document.getElementById('feedback').classList.add('hidden');
-    document.getElementById('answerInput').focus();
-    document.getElementById('submitBtn').textContent = state.languageMode === 'literature' ? 'Предай отговор' : 'Submit Answer';
+
+    if (isVerse) {
+        verseTextarea?.focus();
+    } else {
+        document.getElementById('answerInput').focus();
+    }
+
+    document.getElementById('submitBtn').textContent = (state.languageMode === 'literature' || isVerse) ? 'Предай отговор' : 'Submit Answer';
     document.getElementById('submitBtn').onclick = () => submitAnswer(false);
     
     // Update keyboard visibility based on direction
     updateKeyboardVisibility();
 
     // Start backend timer when the question is actually shown.
-    // This avoids server-side timeouts while the user is still on the feedback screen.
     if (state.sessionId) {
         fetch(`${API_BASE}/quiz/${state.sessionId}/question/${state.currentIndex}/start`, {
             method: 'POST'
-        }).catch(() => {
-            // Best-effort: if this fails, backend will fallback to starting at submit time.
-        });
+        }).catch(() => {});
     }
     
     // Start the timer for this question
@@ -1549,13 +1807,26 @@ async function submitAnswer(isTimeout = false) {
     // Stop the timer
     stopTimer();
 
-    const answer = isTimeout ? '' : document.getElementById('answerInput').value.trim();
+    const isVerse = state.isVerseMode;
+    const isLLMGraded = state.languageMode === 'literature' || isVerse;
+
+    // Get answer from the right input element
+    let answer;
+    if (isTimeout) {
+        answer = '';
+    } else if (isVerse) {
+        answer = (document.getElementById('verseAnswerInput')?.value || '').trim();
+    } else {
+        answer = document.getElementById('answerInput').value.trim();
+    }
+
     const submitBtn = document.getElementById('submitBtn');
     const answerInput = document.getElementById('answerInput');
+    const verseTextarea = document.getElementById('verseAnswerInput');
     const feedback = document.getElementById('feedback');
 
     if (!answer && !isTimeout) {
-        alert(state.languageMode === 'literature' ? 'Моля, въведете отговор' : 'Please enter an answer');
+        alert(isLLMGraded ? 'Моля, въведете отговор' : 'Please enter an answer');
         // Restart timer if user didn't actually submit
         startTimer();
         return;
@@ -1564,14 +1835,15 @@ async function submitAnswer(isTimeout = false) {
     // Prevent double-submit
     if (submitBtn?.disabled) return;
 
-    // Literature: show loading sandbox while waiting for LLM grading
-    if (state.languageMode === 'literature' && !isTimeout) {
+    // LLM-graded modes: show loading spinner while waiting for grading
+    if (isLLMGraded && !isTimeout) {
         if (submitBtn) {
             submitBtn.disabled = true;
             submitBtn.classList.add('btn-loading');
             submitBtn.textContent = 'Оценявам...';
         }
         if (answerInput) answerInput.disabled = true;
+        if (verseTextarea) verseTextarea.disabled = true;
         if (feedback) {
             feedback.classList.remove('hidden', 'correct', 'incorrect', 'loading');
             feedback.classList.add('loading');
@@ -1600,11 +1872,11 @@ async function submitAnswer(isTimeout = false) {
         // Update button to "Next"
         document.getElementById('submitBtn').textContent = 
             state.currentIndex < state.questions.length - 1
-                ? (state.languageMode === 'literature' ? 'Следващ въпрос' : 'Next Question')
-                : (state.languageMode === 'literature' ? 'Виж резултати' : 'View Results');
+                ? (isLLMGraded ? 'Следващ въпрос' : 'Next Question')
+                : (isLLMGraded ? 'Виж резултати' : 'View Results');
         document.getElementById('submitBtn').onclick = nextQuestion;
     } catch (error) {
-        const msg = (state.languageMode === 'literature')
+        const msg = isLLMGraded
             ? ('Грешка при оценяване: ' + error.message)
             : ('Failed to submit answer: ' + error.message);
         alert(msg);
@@ -1613,13 +1885,14 @@ async function submitAnswer(isTimeout = false) {
         if (submitBtn) {
             submitBtn.disabled = false;
             submitBtn.classList.remove('btn-loading');
-            submitBtn.textContent = state.languageMode === 'literature' ? 'Предай отговор' : 'Submit Answer';
+            submitBtn.textContent = isLLMGraded ? 'Предай отговор' : 'Submit Answer';
         }
         if (answerInput) answerInput.disabled = false;
+        if (verseTextarea) verseTextarea.disabled = false;
     }
     finally {
         // Always clear loading state if it was set
-        if (state.languageMode === 'literature' && submitBtn) {
+        if (isLLMGraded && submitBtn) {
             submitBtn.disabled = false;
             submitBtn.classList.remove('btn-loading');
         }
@@ -1633,22 +1906,34 @@ function displayFeedback(result, wasTimeout = false) {
 
     // Check timeout condition more carefully
     const isActualTimeout = (wasTimeout === true || result.timed_out === true);
+    const isVerse = state.isVerseMode;
+    const isLLMGraded = state.languageMode === 'literature' || isVerse;
+
+    // Helper to format correct answer (may be multiline for verse)
+    const formatAnswer = (text) => {
+        if (!text) return '';
+        if (isVerse && text.includes('\n')) {
+            return text.split('\n').map(l => `<div>${l}</div>`).join('');
+        }
+        return text;
+    };
     
-    // Literature mode feedback (LLM-graded)
-    if (state.languageMode === 'literature') {
+    // LLM-graded mode feedback (literature or verse)
+    if (isLLMGraded) {
+        const masteredThreshold = isVerse ? 70 : 85;
+
         if (isActualTimeout) {
             feedback.classList.add('incorrect');
             feedback.innerHTML = `
                 ⏰ Времето изтече!<br>
                 <small>Еталонен отговор:</small><br>
-                <small><strong>${result.correct_answer || ''}</strong></small>
+                <small><strong>${formatAnswer(result.correct_answer)}</strong></small>
             `;
             playErrorSound();
         } else {
             const scorePercent = (result.score_percent !== undefined && result.score_percent !== null)
                 ? result.score_percent
                 : (result.correct ? 100 : 0);
-            const masteredThreshold = 85;
             const isGood = scorePercent >= masteredThreshold;
 
             feedback.classList.add(isGood ? 'correct' : 'incorrect');
@@ -1657,7 +1942,7 @@ function displayFeedback(result, wasTimeout = false) {
                 📊 Оценка: <strong>${scorePercent}%</strong>
                 ${notes}
                 <br><small>Еталонен отговор:</small><br>
-                <small><strong>${result.correct_answer || ''}</strong></small>
+                <small><strong>${formatAnswer(result.correct_answer)}</strong></small>
             `;
 
             if (isGood) {
@@ -1668,6 +1953,10 @@ function displayFeedback(result, wasTimeout = false) {
         }
 
         document.getElementById('answerInput').disabled = true;
+        if (isVerse) {
+            const vta = document.getElementById('verseAnswerInput');
+            if (vta) vta.disabled = true;
+        }
         return;
     }
 
@@ -1708,6 +1997,8 @@ function displayFeedback(result, wasTimeout = false) {
 // Next question or show summary
 function nextQuestion() {
     document.getElementById('answerInput').disabled = false;
+    const vta = document.getElementById('verseAnswerInput');
+    if (vta) vta.disabled = false;
     state.currentIndex++;
 
     if (state.currentIndex < state.questions.length) {
@@ -1738,8 +2029,16 @@ async function showSummary() {
         const incorrectList = document.getElementById('incorrectList');
         let html = '';
 
-        // Literature summary (LLM-graded)
-        if (state.languageMode === 'literature') {
+        // LLM-graded summary (literature or verse)
+        if (state.languageMode === 'literature' || state.isVerseMode) {
+            const formatText = (text) => {
+                if (!text) return '';
+                if (state.isVerseMode && text.includes('\n')) {
+                    return text.split('\n').map(l => `<div>${l}</div>`).join('');
+                }
+                return text;
+            };
+
             if (summary.incorrect_words.length > 0) {
                 html += '<h3>Преглед на отговорите:</h3>';
                 summary.incorrect_words.forEach(item => {
@@ -1749,12 +2048,12 @@ async function showSummary() {
                     const notes = item.notes ? `<br><small style="color:#555;">Бележки: ${item.notes}</small>` : '';
                     html += `
                         <div class="incorrect-item">
-                            <strong>${item.prompt}</strong>
+                            <strong>${formatText(item.prompt)}</strong>
                             <br><small>Оценка: <strong>${score}%</strong></small>
-                            <br><small style="color: #856404;">Твоят отговор: ${item.user_answer || '(няма отговор)'}</small>
+                            <br><small style="color: #856404;">Твоят отговор: ${formatText(item.user_answer) || '(няма отговор)'}</small>
                             ${notes}
                             <br><small>Еталонен отговор:</small>
-                            <br><small><strong>${item.correct_answer || ''}</strong></small>
+                            <br><small><strong>${formatText(item.correct_answer)}</strong></small>
                         </div>
                     `;
                 });
@@ -1864,10 +2163,14 @@ function saveQuizProgress(summary) {
         
         // Determine mastery
         // - Language modes: mastered only if fully correct (not partial credit)
-        // - Literature: mastered if score_percent >= threshold
+        // - Literature: mastered if score_percent >= 85
+        // - Verse: mastered if score_percent >= 70
         const LITERATURE_MASTERED_THRESHOLD = 85;
-        const wasFullyCorrect = state.languageMode === 'literature'
-            ? (answerResult.score_percent !== undefined && answerResult.score_percent !== null && answerResult.score_percent >= LITERATURE_MASTERED_THRESHOLD && answerResult.timed_out !== true)
+        const VERSE_MASTERED_THRESHOLD = 70;
+        const isLLMGraded = state.languageMode === 'literature' || state.isVerseMode;
+        const llmThreshold = state.isVerseMode ? VERSE_MASTERED_THRESHOLD : LITERATURE_MASTERED_THRESHOLD;
+        const wasFullyCorrect = isLLMGraded
+            ? (answerResult.score_percent !== undefined && answerResult.score_percent !== null && answerResult.score_percent >= llmThreshold && answerResult.timed_out !== true)
             : (answerResult.correct === true && !answerResult.partial_credit);
         
         // Get word1 and word2 based on language mode
@@ -1946,6 +2249,12 @@ function retakeExam() {
     state.answers = Array(state.wordPairs.length).fill(null);
     state.wasTrainingSession = true; // Keep the flag so retake option remains available
     
+    // For verse mode, use verse-specific retake
+    if (state.isVerseMode) {
+        startVerseExamAfterTraining();
+        return;
+    }
+    
     // Start quiz with the same word pairs
     startQuizAfterTraining();
 }
@@ -1961,6 +2270,15 @@ function restartQuiz() {
     state.trainingCompleted = false;
     state.mode = 'exam';
     state.wordPairs = [];  // Clear stored word pairs
+    state.isVerseMode = false; // Reset verse mode
+    
+    // Reset verse textarea / regular input visibility
+    const autocompleteContainer = document.getElementById('answerInput')?.closest('.autocomplete-container');
+    if (autocompleteContainer) autocompleteContainer.style.display = '';
+    const verseTextarea = document.getElementById('verseAnswerInput');
+    if (verseTextarea) verseTextarea.style.display = 'none';
+    const quizWordsContainer = document.getElementById('quizWordsContainer');
+    if (quizWordsContainer) quizWordsContainer.style.display = 'none';
     
     // Update progress display when returning to setup
     updateProgressDisplay();
@@ -1979,6 +2297,11 @@ document.addEventListener('keypress', (e) => {
     initAudioContext();
     
     if (e.key === 'Enter') {
+        // In verse mode, allow Enter/Shift+Enter to insert newlines in the textarea
+        if (state.isVerseMode && document.activeElement?.id === 'verseAnswerInput') {
+            return; // let the browser handle newline insertion
+        }
+
         const activeScreen = document.querySelector('.setup-screen.active, .quiz-screen.active, .training-screen.active');
         if (activeScreen) {
             if (activeScreen.id === 'setupScreen') {

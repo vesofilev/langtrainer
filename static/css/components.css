@@ -340,3 +340,20 @@ select:focus, input:focus {
     font-size: 14px;
     color: #333;
 }
+
+/* ==================== Verse Translation ==================== */
+
+#verseAnswerInput {
+    line-height: 1.6;
+    min-height: 120px;
+}
+
+#verseAnswerInput:focus {
+    outline: none;
+    border-color: #8d6e63;
+    box-shadow: 0 0 0 3px rgba(141, 110, 99, 0.15);
+}
+
+#verseTranslationGroup .form-group {
+    margin-bottom: 12px;
+}

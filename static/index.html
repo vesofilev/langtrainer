@@ -105,6 +105,42 @@
             </div>
 
             <button class="btn" id="startSessionBtn" onclick="startSession()">Start Session</button>
+
+            <!-- Verse Translation Button (shown only when verse-eligible lessons are selected) -->
+            <div id="verseTranslationGroup" style="display: none; margin-top: 15px; padding: 15px; background: linear-gradient(135deg, #f5e6d3 0%, #e8d5c4 100%); border-radius: 8px; border: 2px solid #c4a882;">
+                <div style="font-weight: 600; margin-bottom: 10px; color: #5d4037;">📜 Превод на стихове</div>
+                <div class="form-group" style="margin-bottom: 10px;">
+                    <label for="verseLesson" style="font-size: 0.9em;">Стихотворен урок:</label>
+                    <select id="verseLesson" onchange="onVerseLessonChange()"></select>
+                </div>
+                <div class="form-group" style="margin-bottom: 10px;">
+                    <label for="verseGroupSize" style="font-size: 0.9em;">Стихове в група:</label>
+                    <input type="number" id="verseGroupSize" min="1" max="16" value="4" step="1">
+                    <small style="color: #666; display: block; margin-top: 3px;">Колко стиха се показват наведнъж</small>
+                </div>
+                <div class="form-group" style="margin-bottom: 10px;">
+                    <label for="verseOrdering" style="font-size: 0.9em;">Подреждане:</label>
+                    <select id="verseOrdering">
+                        <option value="sequential">Последователно</option>
+                        <option value="random">Случайно</option>
+                    </select>
+                </div>
+                <div class="form-group" style="margin-bottom: 10px;">
+                    <label for="verseSessionMode" style="font-size: 0.9em;">Режим:</label>
+                    <select id="verseSessionMode">
+                        <option value="training">Тренировка + Изпит</option>
+                        <option value="exam">Само изпит</option>
+                    </select>
+                </div>
+                <div class="form-group" style="margin-bottom: 10px;">
+                    <label for="verseTimePerQuestion" style="font-size: 0.9em;">Време за въпрос (секунди):</label>
+                    <input type="number" id="verseTimePerQuestion" min="30" max="600" value="120" step="10">
+                </div>
+                <div id="verseInfo" style="font-size: 0.85em; color: #5d4037; margin-bottom: 10px;"></div>
+                <button class="btn" id="startVerseBtn" onclick="startVerseSession()" style="background: linear-gradient(135deg, #8d6e63, #5d4037);">
+                    📜 Започни превод на стихове
+                </button>
+            </div>
         </div>
 
         <!-- Training Screen -->
@@ -153,6 +189,11 @@
             <div class="question-box">
                 <div class="question-label" id="questionLabel"></div>
                 <div class="question-text" id="questionText"></div>
+                <!-- Verse vocabulary hints in quiz mode -->
+                <div id="quizWordsContainer" style="display: none; margin-top: 15px; padding: 12px; background: #f8f9fa; border-radius: 8px; border: 1px solid #dee2e6;">
+                    <div style="font-size: 12px; color: #888; margin-bottom: 6px;">📖 Vocabulary:</div>
+                    <div id="quizWordsList" style="display: flex; flex-wrap: wrap; gap: 6px;"></div>
+                </div>
             </div>
 
             <div class="feedback hidden" id="feedback"></div>
@@ -162,6 +203,8 @@
                     <input type="text" id="answerInput" placeholder="Type your answer..." autocomplete="off">
                     <div class="autocomplete-dropdown" id="autocompleteDropdown"></div>
                 </div>
+                <!-- Verse translation textarea (shown only in verse mode) -->
+                <textarea id="verseAnswerInput" placeholder="Въведете превода тук..." rows="6" style="display: none; width: 100%; padding: 12px; font-size: 16px; border: 2px solid #c4a882; border-radius: 8px; resize: vertical; font-family: inherit; box-sizing: border-box;"></textarea>
                 <button class="keyboard-toggle" id="keyboardToggle" onclick="toggleGreekKeyboard()">
                     ⌨️ Show Greek Keyboard
                 </button>
