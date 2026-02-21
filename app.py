@@ -66,6 +66,7 @@ class WordPair(BaseModel):
     bulgarian: str
     lesson: Optional[float] = None  # Lesson field (only for Greek words) - supports 32.1, 32.2, etc.
     actual_direction: Optional[str] = None  # For mixed mode: tracks actual direction of this specific word
+    words: Optional[Dict[str, str]] = None  # Optional vocabulary hints (Latin word -> Bulgarian translation)
 
 
 class QuizConfig(BaseModel):
@@ -219,14 +220,14 @@ class WordRepository:
         """Get Latin word pairs for specific lessons."""
         if direction == Direction.LATIN_TO_BULGARIAN:
             filtered = [item for item in self.latin_la_bg_with_lessons if item.get("Урок") in lesson_numbers]
-            return [WordPair(latin=item["la"], bulgarian=item["bg"], lesson=item.get("Урок")) for item in filtered]
+            return [WordPair(latin=item["la"], bulgarian=item["bg"], lesson=item.get("Урок"), words=item.get("words")) for item in filtered]
         elif direction == Direction.BULGARIAN_TO_LATIN:
             filtered = [item for item in self.latin_bg_la_with_lessons if item.get("Урок") in lesson_numbers]
-            return [WordPair(latin=item["la"], bulgarian=item["bg"], lesson=item.get("Урок")) for item in filtered]
+            return [WordPair(latin=item["la"], bulgarian=item["bg"], lesson=item.get("Урок"), words=item.get("words")) for item in filtered]
         else:
             # Return from both files (for mixed mode or general use)
-            la_bg = [WordPair(latin=item["la"], bulgarian=item["bg"], lesson=item.get("Урок")) for item in self.latin_la_bg_with_lessons if item.get("Урок") in lesson_numbers]
-            bg_la = [WordPair(latin=item["la"], bulgarian=item["bg"], lesson=item.get("Урок")) for item in self.latin_bg_la_with_lessons if item.get("Урок") in lesson_numbers]
+            la_bg = [WordPair(latin=item["la"], bulgarian=item["bg"], lesson=item.get("Урок"), words=item.get("words")) for item in self.latin_la_bg_with_lessons if item.get("Урок") in lesson_numbers]
+            bg_la = [WordPair(latin=item["la"], bulgarian=item["bg"], lesson=item.get("Урок"), words=item.get("words")) for item in self.latin_bg_la_with_lessons if item.get("Урок") in lesson_numbers]
             return la_bg + bg_la
 
     def _load_greek_words(self):
@@ -253,7 +254,7 @@ class WordRepository:
                 data = json.load(f)
             self.latin_la_bg_with_lessons = data
             self.latin_la_bg = [
-                WordPair(latin=item["la"], bulgarian=item["bg"], lesson=item.get("Урок"))
+                WordPair(latin=item["la"], bulgarian=item["bg"], lesson=item.get("Урок"), words=item.get("words"))
                 for item in data
             ]
             print(f"[{get_timestamp()}] ✓ Loaded {len(self.latin_la_bg)} Latin→Bulgarian phrases")
@@ -709,11 +710,14 @@ class QuizSession:
             }
         # Handle Latin questions
         elif self.direction == Direction.LATIN_TO_BULGARIAN and has_latin:
-            return {
+            q = {
                 "question_id": str(index),
                 "prompt": pair.latin,
                 "prompt_label": "Latin"
             }
+            if pair.words:
+                q["words"] = pair.words
+            return q
         elif self.direction == Direction.BULGARIAN_TO_LATIN and has_latin:
             return {
                 "question_id": str(index),
@@ -724,31 +728,43 @@ class QuizSession:
             # For mixed mode, use the actual_direction field set during interleaving
             # This handles uneven list lengths correctly
             if pair.actual_direction == Direction.LATIN_TO_BULGARIAN:
-                return {
+                q = {
                     "question_id": str(index),
                     "prompt": pair.latin,
                     "prompt_label": "Latin"
                 }
+                if pair.words:
+                    q["words"] = pair.words
+                return q
             elif pair.actual_direction == Direction.BULGARIAN_TO_LATIN:
-                return {
+                q = {
                     "question_id": str(index),
                     "prompt": pair.bulgarian,
                     "prompt_label": "Bulgarian"
                 }
+                if pair.words:
+                    q["words"] = pair.words
+                return q
             else:
                 # Fallback to index-based if actual_direction not set (shouldn't happen)
                 if index % 2 == 0:
-                    return {
+                    q = {
                         "question_id": str(index),
                         "prompt": pair.latin,
                         "prompt_label": "Latin"
                     }
+                    if pair.words:
+                        q["words"] = pair.words
+                    return q
                 else:
-                    return {
+                    q = {
                         "question_id": str(index),
                         "prompt": pair.bulgarian,
                         "prompt_label": "Bulgarian"
                     }
+                    if pair.words:
+                        q["words"] = pair.words
+                    return q
 
         # Handle Spanish questions
         elif self.direction == Direction.SPANISH_TO_BULGARIAN and has_spanish:
@@ -1630,6 +1646,8 @@ async def start_quiz(config: QuizConfig):
             word_dict = {"latin": wp.latin, "bulgarian": wp.bulgarian, "lesson": wp.lesson}
             if wp.actual_direction:
                 word_dict["actual_direction"] = wp.actual_direction
+            if wp.words:
+                word_dict["words"] = wp.words
             word_pairs_dict.append(word_dict)
         else:  # Spanish
             word_dict = {"spanish": wp.spanish, "bulgarian": wp.bulgarian, "lesson": wp.lesson}

@@ -1339,6 +1339,18 @@ function displayTrainingWord() {
     document.getElementById('trainingPromptLabel').textContent = question.prompt_label;
     document.getElementById('trainingPrompt').textContent = question.prompt;
     
+    // Show vocabulary words if present
+    const wordsContainer = document.getElementById('trainingWordsContainer');
+    const wordsList = document.getElementById('trainingWordsList');
+    if (question.words && Object.keys(question.words).length > 0) {
+        wordsList.innerHTML = Object.entries(question.words).map(([latin, bg]) => 
+            `<span style="display: inline-block; padding: 4px 10px; background: #e8eaf6; border-radius: 4px; font-size: 0.9em;"><strong>${latin}</strong> — ${bg}</span>`
+        ).join('');
+        wordsContainer.style.display = 'block';
+    } else {
+        wordsContainer.style.display = 'none';
+    }
+    
     // Fetch the correct answer for this question
     fetchCorrectAnswer();
 
