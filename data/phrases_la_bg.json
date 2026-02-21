@@ -659,5 +659,124 @@
             "sanguine": "кръв",
             "ducet": "ще отведе"
         }
+    },
+    {
+        "la": "In nova fert animus mutatas dicere formas",
+        "bg": "Душата ми ме кара да възпея променените образи",
+        "Урок": 10.2,
+        "words": {
+            "nova": "нови",
+            "fert": "кара/носи",
+            "animus": "душа/дух",
+            "mutatas": "променени",
+            "dicere": "да кажа/възпея",
+            "formas": "образи/форми"
+        }
+    },
+    {
+        "la": "corpora; di, coeptis (nam vos mutastis et illas)",
+        "bg": "в тела; богове, понеже вие променихте и онези,",
+        "Урок": 10.2,
+        "words": {
+            "corpora": "тела",
+            "di": "богове",
+            "coeptis": "начинания",
+            "nam": "понеже/защото",
+            "vos": "вие",
+            "mutastis": "променихте",
+            "illas": "онези"
+        }
+    },
+    {
+        "la": "adspirate meis primaque ab origine mundi",
+        "bg": "вдъхновете моите начинания от самото начало на света",
+        "Урок": 10.2,
+        "words": {
+            "adspirate": "вдъхновете",
+            "meis": "моите",
+            "prima": "първо/начало",
+            "ab": "от",
+            "origine": "начало/произход",
+            "mundi": "свят"
+        }
+    },
+    {
+        "la": "ad mea perpetuum deducite tempora carmen!",
+        "bg": "доведете непрекъснатата ми песен до моите времена!",
+        "Урок": 10.2,
+        "words": {
+            "mea": "моите",
+            "perpetuum": "непрекъсната/вечна",
+            "deducite": "доведете",
+            "tempora": "времена",
+            "carmen": "песен"
+        }
+    },
+    {
+        "la": "Ante mare et terras et quod tegit omnia caelum",
+        "bg": "Преди морето и земите и небето, което покрива всички неща,",
+        "Урок": 10.2,
+        "words": {
+            "ante": "преди",
+            "mare": "море",
+            "terras": "земи",
+            "quod": "което",
+            "tegit": "покрива",
+            "omnia": "всички",
+            "caelum": "небе"
+        }
+    },
+    {
+        "la": "unus erat toto naturae vultus in orbe,",
+        "bg": "едно беше лицето на природата в целия свят,",
+        "Урок": 10.2,
+        "words": {
+            "unus": "едно/един",
+            "erat": "беше",
+            "toto": "цял",
+            "naturae": "природа",
+            "vultus": "лице/облик",
+            "orbe": "свят/кръг"
+        }
+    },
+    {
+        "la": "quem dixere chaos: rudis indigestaque moles",
+        "bg": "което те нарекоха Хаос: сурова и неразличима маса,",
+        "Урок": 10.2,
+        "words": {
+            "quem": "което/когото",
+            "dixere": "нарекоха",
+            "chaos": "хаос",
+            "rudis": "суров/необработен",
+            "indigesta": "неразличим/неподреден",
+            "moles": "маса/грамада"
+        }
+    },
+    {
+        "la": "nec quicquam nisi pondus iners congestaque eodem",
+        "bg": "и нямаше каквото и да е освен неподвижна и събрана на едно и също място тежест",
+        "Урок": 10.2,
+        "words": {
+            "nec": "и не/нито",
+            "quicquam": "каквото и да е",
+            "nisi": "освен",
+            "pondus": "тежест",
+            "iners": "неподвижна/инертна",
+            "congesta": "събрана/натрупана",
+            "eodem": "на същото място"
+        }
+    },
+    {
+        "la": "non bene iunctarum discordia semina rerum.",
+        "bg": "раздорни семена на зле съчетаните неща.",
+        "Урок": 10.2,
+        "words": {
+            "non": "не",
+            "bene": "добре",
+            "iunctarum": "съчетани/свързани",
+            "discordia": "раздорни/несъгласни",
+            "semina": "семена",
+            "rerum": "неща/дела"
+        }
     }
 ]
