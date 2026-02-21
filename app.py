@@ -147,6 +147,8 @@ class WordRepository:
         # Latin data
         self.latin_la_bg: List[WordPair] = []  # Latin -> Bulgarian
         self.latin_bg_la: List[WordPair] = []  # Bulgarian -> Latin
+        self.latin_la_bg_with_lessons: List[Dict] = []  # Raw data with lessons
+        self.latin_bg_la_with_lessons: List[Dict] = []  # Raw data with lessons
 
         # Spanish data (preferred format: like Greek)
         self.spanish_words: List[WordPair] = []
@@ -202,6 +204,31 @@ class WordRepository:
             if item.get("Лема") is not None and item.get("Превод") is not None
         ]
     
+    def get_latin_available_lessons(self) -> List[float]:
+        """Get sorted list of available lesson numbers for Latin."""
+        lessons = set()
+        for item in self.latin_la_bg_with_lessons:
+            if "Урок" in item:
+                lessons.add(item["Урок"])
+        for item in self.latin_bg_la_with_lessons:
+            if "Урок" in item:
+                lessons.add(item["Урок"])
+        return sorted(lessons)
+
+    def get_latin_words_by_lessons(self, lesson_numbers: List[float], direction: str = None) -> List[WordPair]:
+        """Get Latin word pairs for specific lessons."""
+        if direction == Direction.LATIN_TO_BULGARIAN:
+            filtered = [item for item in self.latin_la_bg_with_lessons if item.get("Урок") in lesson_numbers]
+            return [WordPair(latin=item["la"], bulgarian=item["bg"], lesson=item.get("Урок")) for item in filtered]
+        elif direction == Direction.BULGARIAN_TO_LATIN:
+            filtered = [item for item in self.latin_bg_la_with_lessons if item.get("Урок") in lesson_numbers]
+            return [WordPair(latin=item["la"], bulgarian=item["bg"], lesson=item.get("Урок")) for item in filtered]
+        else:
+            # Return from both files (for mixed mode or general use)
+            la_bg = [WordPair(latin=item["la"], bulgarian=item["bg"], lesson=item.get("Урок")) for item in self.latin_la_bg_with_lessons if item.get("Урок") in lesson_numbers]
+            bg_la = [WordPair(latin=item["la"], bulgarian=item["bg"], lesson=item.get("Урок")) for item in self.latin_bg_la_with_lessons if item.get("Урок") in lesson_numbers]
+            return la_bg + bg_la
+
     def _load_greek_words(self):
         """Load Greek words from JSON file"""
         if not self.greek_data_path.exists():
@@ -224,8 +251,9 @@ class WordRepository:
         if self.latin_la_bg_path.exists():
             with open(self.latin_la_bg_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
+            self.latin_la_bg_with_lessons = data
             self.latin_la_bg = [
-                WordPair(latin=item["la"], bulgarian=item["bg"])
+                WordPair(latin=item["la"], bulgarian=item["bg"], lesson=item.get("Урок"))
                 for item in data
             ]
             print(f"[{get_timestamp()}] ✓ Loaded {len(self.latin_la_bg)} Latin→Bulgarian phrases")
@@ -236,8 +264,9 @@ class WordRepository:
         if self.latin_bg_la_path.exists():
             with open(self.latin_bg_la_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
+            self.latin_bg_la_with_lessons = data
             self.latin_bg_la = [
-                WordPair(latin=item["la"], bulgarian=item["bg"])
+                WordPair(latin=item["la"], bulgarian=item["bg"], lesson=item.get("Урок"))
                 for item in data
             ]
             print(f"[{get_timestamp()}] ✓ Loaded {len(self.latin_bg_la)} Bulgarian→Latin phrases")
@@ -1117,14 +1146,14 @@ async def get_config(language_mode: str = LanguageMode.GREEK):
         ]
         has_lessons = True
     elif language_mode == LanguageMode.LATIN:
-        available_lessons = []
+        available_lessons = word_repo.get_latin_available_lessons()
         total_words = len(word_repo.latin_la_bg) + len(word_repo.latin_bg_la)
         directions = [
             {"value": Direction.LATIN_TO_BULGARIAN, "label": "Latin → Bulgarian"},
             {"value": Direction.BULGARIAN_TO_LATIN, "label": "Bulgarian → Latin"},
             {"value": Direction.LATIN_MIXED, "label": "Mixed (Both Directions)"}
         ]
-        has_lessons = False
+        has_lessons = bool(available_lessons)
     elif language_mode == LanguageMode.SPANISH:
         if len(word_repo.spanish_words) > 0:
             available_lessons = word_repo.get_spanish_available_lessons()
@@ -1186,7 +1215,11 @@ async def get_words_count(request: Dict):
         words = word_repo.get_words_by_lessons(selected_lessons)
         return {"count": len(words)}
     elif language_mode == LanguageMode.LATIN:
+        selected_lessons = request.get("selected_lessons", [])
         direction = request.get("direction", Direction.LATIN_TO_BULGARIAN)
+        if selected_lessons:
+            words = word_repo.get_latin_words_by_lessons(selected_lessons, direction if direction != Direction.LATIN_MIXED else None)
+            return {"count": len(words)}
         if direction == Direction.LATIN_MIXED:
             # For mixed mode, return combined count from both directions
             count = len(word_repo.latin_la_bg) + len(word_repo.latin_bg_la)
@@ -1328,7 +1361,8 @@ async def start_quiz(config: QuizConfig):
             elif config.language_mode == LanguageMode.LATIN:
                 word_pairs.append(WordPair(
                     latin=wp.get("latin"),
-                    bulgarian=wp["bulgarian"]
+                    bulgarian=wp["bulgarian"],
+                    lesson=wp.get("lesson")
                 ))
             else:  # Spanish
                 word_pairs.append(WordPair(
@@ -1350,6 +1384,8 @@ async def start_quiz(config: QuizConfig):
             # For mixed mode, we need to handle word selection differently
             if config.direction == Direction.LATIN_MIXED:
                 available_words = None  # handled later
+            elif config.selected_lessons:
+                available_words = word_repo.get_latin_words_by_lessons(config.selected_lessons, config.direction)
             else:
                 available_words = word_repo.get_words_for_language_and_direction(config.language_mode, config.direction)
         else:  # Spanish
@@ -1400,6 +1436,11 @@ async def start_quiz(config: QuizConfig):
                     available_words = word_repo.get_words_by_lessons(config.selected_lessons)
                 else:
                     available_words = word_repo.greek_words
+            elif config.language_mode == LanguageMode.LATIN:
+                if config.selected_lessons:
+                    available_words = word_repo.get_latin_words_by_lessons(config.selected_lessons, config.direction)
+                else:
+                    available_words = word_repo.get_words_for_language_and_direction(config.language_mode, config.direction)
             elif config.language_mode == LanguageMode.SPANISH and len(word_repo.spanish_words) > 0:
                 if config.selected_lessons:
                     available_words = word_repo.get_spanish_words_by_lessons(config.selected_lessons)
@@ -1412,8 +1453,12 @@ async def start_quiz(config: QuizConfig):
         # Special handling for Latin mixed mode
         if config.language_mode == LanguageMode.LATIN and config.direction == Direction.LATIN_MIXED:
             # Get words from both directions separately
-            la_bg_words = word_repo.latin_la_bg
-            bg_la_words = word_repo.latin_bg_la
+            if config.selected_lessons:
+                la_bg_words = word_repo.get_latin_words_by_lessons(config.selected_lessons, Direction.LATIN_TO_BULGARIAN)
+                bg_la_words = word_repo.get_latin_words_by_lessons(config.selected_lessons, Direction.BULGARIAN_TO_LATIN)
+            else:
+                la_bg_words = word_repo.latin_la_bg
+                bg_la_words = word_repo.latin_bg_la
             
             # Filter out correctly answered words if requested
             if config.exclude_correct_words:
@@ -1562,7 +1607,7 @@ async def start_quiz(config: QuizConfig):
     print(f"[{get_timestamp()}]   Direction: {config.direction}")
     print(f"[{get_timestamp()}]   Word Count: {len(word_pairs)}")
     print(f"[{get_timestamp()}]   Time per Question: {config.time_per_question}s")
-    if config.selected_lessons and config.language_mode in [LanguageMode.GREEK, LanguageMode.SPANISH]:
+    if config.selected_lessons and config.language_mode in [LanguageMode.GREEK, LanguageMode.LATIN, LanguageMode.SPANISH]:
         print(f"[{get_timestamp()}]   Selected Lessons: {sorted(config.selected_lessons)}")
     print()
     
@@ -1582,7 +1627,7 @@ async def start_quiz(config: QuizConfig):
                 "lesson": wp.lesson
             })
         elif config.language_mode == LanguageMode.LATIN:
-            word_dict = {"latin": wp.latin, "bulgarian": wp.bulgarian}
+            word_dict = {"latin": wp.latin, "bulgarian": wp.bulgarian, "lesson": wp.lesson}
             if wp.actual_direction:
                 word_dict["actual_direction"] = wp.actual_direction
             word_pairs_dict.append(word_dict)

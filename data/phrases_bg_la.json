@@ -1,406 +1,507 @@
 [
     {
         "bg": "ще имате намерение да чувате",
-        "la": "audituri eritis"
+        "la": "audituri eritis",
+        "Урок": 1
     },
     {
         "bg": "беше моряк",
-        "la": "nauta erat"
+        "la": "nauta erat",
+        "Урок": 1
     },
     {
         "bg": "Какво виждаш?",
-        "la": "Quid vides?"
+        "la": "Quid vides?",
+        "Урок": 1
     },
     {
         "bg": "Знам, че животът е кратък.",
-        "la": "Scio vitam brevem esse."
+        "la": "Scio vitam brevem esse.",
+        "Урок": 1
     },
     {
         "bg": "никой",
-        "la": "nemo"
+        "la": "nemo",
+        "Урок": 1
     },
     {
         "bg": "прославят природата",
-        "la": "celebrant naturam"
+        "la": "celebrant naturam",
+        "Урок": 1
     },
     {
         "bg": "момичетата се подчиняват",
-        "la": "puellae parent"
+        "la": "puellae parent",
+        "Урок": 1
     },
     {
         "bg": "подтиква към веселие",
-        "la": "ad laetitiam incitat"
+        "la": "ad laetitiam incitat",
+        "Урок": 1
     },
     {
         "bg": "в стаите на храмовете",
-        "la": "in cellis templorum"
+        "la": "in cellis templorum",
+        "Урок": 1
     },
     {
         "bg": "голямо шествие",
-        "la": "pompa magna"
+        "la": "pompa magna",
+        "Урок": 1
     },
     {
         "bg": "вече приближаваха",
-        "la": "iam appropinquabant"
+        "la": "iam appropinquabant",
+        "Урок": 1
     },
     {
         "bg": "много градове",
-        "la": "multae urbes/multa oppda"
+        "la": "multae urbes/multa oppda",
+        "Урок": 1
     },
     {
         "bg": "правеха военен лагер",
-        "la": "castra faciebant"
+        "la": "castra faciebant",
+        "Урок": 1
     },
     {
         "bg": "подтикнати от надежда",
-        "la": "aducti spe"
+        "la": "aducti spe",
+        "Урок": 1
     },
     {
         "bg": "в голямо изобилие",
-        "la": "in magna copia"
+        "la": "in magna copia",
+        "Урок": 1
     },
     {
         "bg": "за войната и за мира",
-        "la": "pro bello et pro pace"
+        "la": "pro bello et pro pace",
+        "Урок": 1
     },
     {
         "bg": "водеха произхода",
-        "la": "originem ducebant"
+        "la": "originem ducebant",
+        "Урок": 1
     },
     {
         "bg": "за правилния път",
-        "la": "de via recta"
+        "la": "de via recta",
+        "Урок": 1
     },
     {
         "bg": "великолепно погребение",
-        "la": "funus magnificum"
+        "la": "funus magnificum",
+        "Урок": 1
     },
     {
         "bg": "хвърлиха копия",
-        "la": "hastae iacerunt"
+        "la": "hastae iacerunt",
+        "Урок": 1
     },
     {
         "bg": "с голямо изкуство",
-        "la": "magna arte"
+        "la": "magna arte",
+        "Урок": 1
     },
     {
         "bg": "най-голяма от всички",
-        "la": "maxima omnium"
+        "la": "maxima omnium",
+        "Урок": 1
     },
     {
         "bg": "красотата на областта",
-        "la": "pulchritudo regionis"
+        "la": "pulchritudo regionis",
+        "Урок": 1
     },
     {
         "bg": "най-голям град",
-        "la": "urbs maxima"
+        "la": "urbs maxima",
+        "Урок": 1
     },
     {
         "bg": "своя брат",
-        "la": "fratrem suum"
+        "la": "fratrem suum",
+        "Урок": 1
     },
     {
         "bg": "бяха пирати",
-        "la": "piratae erant"
+        "la": "piratae erant",
+        "Урок": 1
     },
     {
         "bg": "имахте намерение да обичате",
-        "la": "amaturi eratis"
+        "la": "amaturi eratis",
+        "Урок": 1
     },
     {
         "bg": "Кой идва?",
-        "la": "Quis venit?"
+        "la": "Quis venit?",
+        "Урок": 1
     },
     {
         "bg": "Мисля, че пътят е труден.",
-        "la": "Arbitror viam difficilem esse."
+        "la": "Arbitror viam difficilem esse.",
+        "Урок": 1
     },
     {
         "bg": "някакъв човек",
-        "la": "quidam homo"
+        "la": "quidam homo",
+        "Урок": 1
     },
     {
         "bg": "показват пътищата",
-        "la": "vias monstrant"
+        "la": "vias monstrant",
+        "Урок": 1
     },
     {
         "bg": "почитат богинята",
-        "la": "deam colunt"
+        "la": "deam colunt",
+        "Урок": 1
     },
     {
         "bg": "лекува болестите",
-        "la": "morbos curat"
+        "la": "morbos curat",
+        "Урок": 1
     },
     {
         "bg": "пъпа на Рима",
-        "la": "umbilicus Romae"
+        "la": "umbilicus Romae",
+        "Урок": 1
     },
     {
         "bg": "бял бик",
-        "la": "taurus albus"
+        "la": "taurus albus",
+        "Урок": 1
     },
     {
         "bg": "за своята родина",
-        "la": "pro patria sua"
+        "la": "pro patria sua",
+        "Урок": 1
     },
     {
         "bg": "с мраморни храмове",
-        "la": "cum templis marmoreis"
+        "la": "cum templis marmoreis",
+        "Урок": 1
     },
     {
         "bg": "с тежки думи",
-        "la": "cum verbis gravibus"
+        "la": "cum verbis gravibus",
+        "Урок": 1
     },
     {
         "bg": "римската войска",
-        "la": "exercitus Romanus"
+        "la": "exercitus Romanus",
+        "Урок": 1
     },
     {
         "bg": "своите неприятели",
-        "la": "inimici sui/hostes suos"
+        "la": "inimici sui/hostes suos",
+        "Урок": 1
     },
     {
         "bg": "освободи от страх",
-        "la": "metu liberavit"
+        "la": "metu liberavit",
+        "Урок": 1
     },
     {
         "bg": "държаха мястото",
-        "la": "locum tenebant"
+        "la": "locum tenebant",
+        "Урок": 1
     },
     {
         "bg": "наричат ме",
-        "la": "vocor"
+        "la": "vocor",
+        "Урок": 1
     },
     {
         "bg": "нарече убийството",
-        "la": "caedem vocavit"
+        "la": "caedem vocavit",
+        "Урок": 1
     },
     {
         "bg": "в бягство е хванат",
-        "la": "in fuga captus est"
+        "la": "in fuga captus est",
+        "Урок": 1
     },
     {
         "bg": "плашеше мъжете",
-        "la": "viros terrebat"
+        "la": "viros terrebat",
+        "Урок": 1
     },
     {
         "bg": "много храмове",
-        "la": "templa multa"
+        "la": "templa multa",
+        "Урок": 1
     },
     {
         "bg": "голяма наслада",
-        "la": "delicia magna"
+        "la": "delicia magna",
+        "Урок": 1
     },
     {
         "bg": "най-голям град",
-        "la": "urbs maxima"
+        "la": "urbs maxima",
+        "Урок": 1
     },
     {
         "bg": "по този път",
-        "la": "ea via"
+        "la": "ea via",
+        "Урок": 1
     },
     {
         "bg": "бяхте земеделци",
-        "la": "agricolae eratis"
+        "la": "agricolae eratis",
+        "Урок": 1
     },
     {
         "bg": "имаш намерение да обичаш",
-        "la": "amaturus es"
+        "la": "amaturus es",
+        "Урок": 1
     },
     {
         "bg": "Какво правиш?",
-        "la": "Quid facis?"
+        "la": "Quid facis?",
+        "Урок": 1
     },
     {
         "bg": "никакъв човек",
-        "la": "homo nullus"
+        "la": "homo nullus",
+        "Урок": 1
     },
     {
         "bg": "Чувам, че земята е бяла",
-        "la": "Audio, terram albam esse"
+        "la": "Audio, terram albam esse",
+        "Урок": 1
     },
     {
         "bg": "обичат земята",
-        "la": "terram amant"
+        "la": "terram amant",
+        "Урок": 1
     },
     {
         "bg": "дарява маслиново дърво",
-        "la": "olivam donat"
+        "la": "olivam donat",
+        "Урок": 1
     },
     {
         "bg": "господарят на океаните",
-        "la": "dominus oceanorum"
+        "la": "dominus oceanorum",
+        "Урок": 1
     },
     {
         "bg": "помощта на боговете",
-        "la": "auxilium deorum"
+        "la": "auxilium deorum",
+        "Урок": 1
     },
     {
         "bg": "от много злини",
-        "la": "ex multis malis"
+        "la": "ex multis malis",
+        "Урок": 1
     },
     {
         "bg": "не липсваше помощ",
-        "la": "auxilium non deficiebant"
+        "la": "auxilium non deficiebant",
+        "Урок": 1
     },
     {
         "bg": "често на брега",
-        "la": "saepe ad oram"
+        "la": "saepe ad oram",
+        "Урок": 1
     },
     {
         "bg": "взима решение",
-        "la": "consilium capit"
+        "la": "consilium capit",
+        "Урок": 1
     },
     {
         "bg": "с различни начини",
-        "la": "variis modis"
+        "la": "variis modis",
+        "Урок": 1
     },
     {
         "bg": "храм на богинята",
-        "la": "templum deae"
+        "la": "templum deae",
+        "Урок": 1
     },
     {
         "bg": "наречен диктатор",
-        "la": "dictator nominatus"
+        "la": "dictator nominatus",
+        "Урок": 1
     },
     {
         "bg": "нахлуха в Рим",
-        "la": "invaserunt in Romam"
+        "la": "invaserunt in Romam",
+        "Урок": 1
     },
     {
         "bg": "вечна слава",
-        "la": "gloria aeterna"
+        "la": "gloria aeterna",
+        "Урок": 1
     },
     {
         "bg": "други видове",
-        "la": "alia genera"
+        "la": "alia genera",
+        "Урок": 1
     },
     {
         "bg": "тежко се прие",
-        "la": "graviter acceptum est"
+        "la": "graviter acceptum est",
+        "Урок": 1
     },
     {
         "bg": "богат на извори",
-        "la": "fontibus opulenta"
+        "la": "fontibus opulenta",
+        "Урок": 1
     },
     {
         "bg": "с невероятно изкуство",
-        "la": "incredibili arte"
+        "la": "incredibili arte",
+        "Урок": 1
     },
     {
         "bg": "с изключителна красота",
-        "la": "pulchritudine eximia"
+        "la": "pulchritudine eximia",
+        "Урок": 1
     },
     {
         "bg": "последен е построен",
-        "la": "postremus aedificatus est"
+        "la": "postremus aedificatus est",
+        "Урок": 1
     },
     {
         "bg": "по-добре учат",
-        "la": "melius discunt"
+        "la": "melius discunt",
+        "Урок": 1
     },
     {
         "bg": "направи!",
-        "la": "fac!"
+        "la": "fac!",
+        "Урок": 1
     },
     {
         "bg": "имат намерение да държат",
-        "la": "tenituri sunt"
+        "la": "tenituri sunt",
+        "Урок": 1
     },
     {
         "bg": "Кого виждаш?",
-        "la": "Quem vides?"
+        "la": "Quem vides?",
+        "Урок": 1
     },
     {
         "bg": "Виждам, че господарят е добър.",
-        "la": "Video dominum bonum esse."
+        "la": "Video dominum bonum esse.",
+        "Урок": 1
     },
     {
         "bg": "искам да нося",
-        "la": "volo ferre"
+        "la": "volo ferre",
+        "Урок": 1
     },
     {
         "bg": "някой",
-        "la": "aliquis"
+        "la": "aliquis",
+        "Урок": 1
     },
     {
         "bg": "провинциите на Рим",
-        "la": "provinciae Romae"
+        "la": "provinciae Romae",
+        "Урок": 1
     },
     {
         "bg": "не лови мухи",
-        "la": "muscas non capit"
+        "la": "muscas non capit",
+        "Урок": 1
     },
     {
         "bg": "радват народа",
-        "la": "populum delectant"
+        "la": "populum delectant",
+        "Урок": 1
     },
     {
         "bg": "от яйцето до ябълките",
-        "la": "ab ovo usque ad mala"
+        "la": "ab ovo usque ad mala",
+        "Урок": 1
     },
     {
         "bg": "пълнят храма",
-        "la": "templum implent"
+        "la": "templum implent",
+        "Урок": 1
     },
     {
         "bg": "не може да се купи",
-        "la": "emi non potest"
+        "la": "emi non potest",
+        "Урок": 1
     },
     {
         "bg": "красива книга",
-        "la": "liber pulcher"
+        "la": "liber pulcher",
+        "Урок": 1
     },
     {
         "bg": "водим война",
-        "la": "bellum gerimus"
+        "la": "bellum gerimus",
+        "Урок": 1
     },
     {
         "bg": "не мога да живея",
-        "la": "vivere non possum"
+        "la": "vivere non possum",
+        "Урок": 1
     },
     {
         "bg": "разделиха плячката",
-        "la": "praedam diviserunt"
+        "la": "praedam diviserunt",
+        "Урок": 1
     },
     {
         "bg": "имаха право",
-        "la": "ius habebant"
+        "la": "ius habebant",
+        "Урок": 1
     },
     {
         "bg": "разруши гражданството",
-        "la": "civitatem delevit"
+        "la": "civitatem delevit",
+        "Урок": 1
     },
     {
         "bg": "дванадесет подвига",
-        "la": "duodecim labores"
+        "la": "duodecim labores",
+        "Урок": 1
     },
     {
         "bg": "видях шествието",
-        "la": "pompam vidi"
+        "la": "pompam vidi",
+        "Урок": 1
     },
     {
         "bg": "част от войската",
-        "la": "pars exercitus"
+        "la": "pars exercitus",
+        "Урок": 1
     },
     {
         "bg": "с голяма сила",
-        "la": "magna vi"
+        "la": "magna vi",
+        "Урок": 1
     },
     {
         "bg": "древните паметници",
-        "la": "monumenta antiqua"
+        "la": "monumenta antiqua",
+        "Урок": 1
     },
     {
         "bg": "нова книга",
-        "la": "liber novus"
+        "la": "liber novus",
+        "Урок": 1
     },
     {
         "bg": "най-пълен с риби",
-        "la": "plenissimus piscium "
+        "la": "plenissimus piscium ",
+        "Урок": 1
     },
     {
         "bg": "очите виждат",
-        "la": "oculi vident"
+        "la": "oculi vident",
+        "Урок": 1
     }
 ]
