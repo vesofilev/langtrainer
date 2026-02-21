@@ -1278,12 +1278,23 @@ async function startSession() {
 function getCorrectWordsForLessons(lessons, direction) {
     const progress = getProgressData();
     const correctWords = [];
-    const foreignKey = state.languageMode === 'spanish' ? 'spanish' : 'greek';
+    const foreignKey = state.languageMode === 'spanish' ? 'spanish' : (state.languageMode === 'latin' ? 'latin' : 'greek');
+    
+    // For mixed modes, match both sub-directions
+    const directionMatches = (entryDirection) => {
+        if (direction === 'latin_mixed') {
+            return entryDirection === 'latin_to_bulgarian' || entryDirection === 'bulgarian_to_latin';
+        }
+        if (direction === 'spanish_mixed') {
+            return entryDirection === 'spanish_to_bulgarian' || entryDirection === 'bulgarian_to_spanish';
+        }
+        return entryDirection === direction;
+    };
     
     for (const key in progress.wordProgress) {
         const entry = progress.wordProgress[key];
         if (entry.correct && 
-            entry.direction === direction && 
+            directionMatches(entry.direction) && 
             lessons.includes(entry.lesson)) {
             correctWords.push({
                 [foreignKey]: entry.word1,
