@@ -985,5 +985,408 @@
             "transire": "преминават",
             "alios": "други"
         }
+    },
+    {
+        "la": "Condita civitate, quam ipse ex nomine suo Romulus Romam vocavit, haec fere egit.",
+        "bg": "С основаването на града, който самият той нарече Рим по своето име, Ромул извърши следните неща.",
+        "Урок": 47,
+        "words": {
+            "condita": "основан",
+            "civitate": "град/държава",
+            "ipse": "самият",
+            "nomine": "име",
+            "vocavit": "нарече/нарекъл",
+            "haec": "тези",
+            "fere": "приблизително/следните",
+            "egit": "извърши"
+        }
+    },
+    {
+        "la": "Centum ex senioribus legit, quos ille senatores nominavit propter senectutem.",
+        "bg": "Той избра сто от най-старите (мъже), които нарече сенатори поради тяхната старост.",
+        "Урок": 47,
+        "words": {
+            "centum": "сто",
+            "senioribus": "най-старите",
+            "legit": "избра",
+            "senatores": "сенатори",
+            "nominavit": "нарече/именува",
+            "propter": "поради",
+            "senectutem": "старост"
+        }
+    },
+    {
+        "la": "Commotis bellis, Sabinos, Fidenates, Veientes vicit.",
+        "bg": "След като започнал войни, той победил сабините, фиденатите и веийците.",
+        "Урок": 47,
+        "words": {
+            "commotis": "започнали/предизвикани",
+            "bellis": "войни",
+            "vicit": "победил"
+        }
+    },
+    {
+        "la": "Haec omnia oppida urbem cingunt.",
+        "bg": "Всички тези градове обграждат града (Рим).",
+        "Урок": 47,
+        "words": {
+            "haec": "тези",
+            "omnia": "всички",
+            "oppida": "градове",
+            "urbem": "град",
+            "cingunt": "обграждат"
+        }
+    },
+    {
+        "la": "Postea Numa Pompilius rex creatus est.",
+        "bg": "След това Нума Помпилий бил избран за цар.",
+        "Урок": 47,
+        "words": {
+            "postea": "след това",
+            "rex": "цар",
+            "creatus est": "бил избран"
+        }
+    },
+    {
+        "la": "Iste nullum bellum gessit, sed non minus civitati quam Romulus profuit.",
+        "bg": "Той не водил никаква война, но не бил по-малко полезен за държавата отколкото Ромул.",
+        "Урок": 47,
+        "words": {
+            "iste": "той/този",
+            "nullum": "никаква",
+            "bellum": "война",
+            "gessit": "водил",
+            "minus": "по-малко",
+            "civitati": "държава/град",
+            "quam": "отколкото",
+            "profuit": "бил полезен"
+        }
+    },
+    {
+        "la": "Huic successit Tullus Hostilius.",
+        "bg": "На него наследник бил Тул Хостилий.",
+        "Урок": 47,
+        "words": {
+            "huic": "на него/на този",
+            "successit": "наследил/последвал"
+        }
+    },
+    {
+        "la": "Hic bella reparavit, urbem ampliavit adiecto Caelio monte.",
+        "bg": "Този отново започнал войни, разширил града като прибавил хълма Целий.",
+        "Урок": 47,
+        "words": {
+            "hic": "този",
+            "bella": "войни",
+            "reparavit": "отново започнал/подновил",
+            "urbem": "град",
+            "ampliavit": "разширил",
+            "adiecto": "прибавен",
+            "monte": "хълм"
+        }
+    },
+    {
+        "la": "Post hunc Ancus Marcius, Numae ex filia nepos, suscepit imperium.",
+        "bg": "След него властта поел Анк Марций, внук по дъщеря на Нума.",
+        "Урок": 47,
+        "words": {
+            "post": "след",
+            "hunc": "него/този",
+            "filia": "дъщеря",
+            "nepos": "внук",
+            "suscepit": "поел/приел",
+            "imperium": "власт/империя"
+        }
+    },
+    {
+        "la": "Is contra Latinos dimicavit, Aventinum montem civitati adiecit.",
+        "bg": "Той воювал срещу латините и прибавил хълма Авентин към града.",
+        "Урок": 47,
+        "words": {
+            "is": "той",
+            "contra": "срещу",
+            "dimicavit": "воювал/сражавал се",
+            "montem": "хълм",
+            "civitati": "град/държава",
+            "adiecit": "прибавил/добавил"
+        }
+    },
+    {
+        "la": "Romulo regnante urbs Roma eo modo condita est.",
+        "bg": "Докато Ромул управлявал, град Рим бил основан по този начин.",
+        "Урок": 43,
+        "words": {
+            "regnante": "управлявал/царувал",
+            "urbs": "град",
+            "eo modo": "по този начин",
+            "condita est": "бил основан"
+        }
+    },
+    {
+        "la": "Rex ad montem Palatinum pervenit ibique constitit.",
+        "bg": "Кралят достигна до Палатинския хълм и там спря.",
+        "Урок": 43,
+        "words": {
+            "rex": "крал/цар",
+            "montem": "хълм",
+            "pervenit": "достигна",
+            "ibique": "и там",
+            "constitit": "спря/застана"
+        }
+    },
+    {
+        "la": "Eo loco occupato deos oravit et victimis eos placavit.",
+        "bg": "След като завладя това място, той умолявал боговете и ги умилостивил с жертви.",
+        "Урок": 43,
+        "words": {
+            "eo loco": "това място",
+            "occupato": "завладян/зает",
+            "deos": "богове",
+            "oravit": "умолявал/молил",
+            "victimis": "жертви",
+            "placavit": "умилостивил"
+        }
+    },
+    {
+        "la": "Sacris factis existimavit perpetuum auxilium urbi dari.",
+        "bg": "След извършването на жертвоприношенията той прецени, че на града ще бъде дадена вечна помощ.",
+        "Урок": 43,
+        "words": {
+            "sacris": "жертвоприношения/свещени",
+            "factis": "извършени",
+            "existimavit": "прецени/сметна",
+            "perpetuum": "вечна",
+            "auxilium": "помощ",
+            "urbi": "град",
+            "dari": "бъде дадена"
+        }
+    },
+    {
+        "la": "Iis rebus confectis fossam fecit.",
+        "bg": "След като завършил тези неща, той изкопа ров.",
+        "Урок": 43,
+        "words": {
+            "iis": "тези",
+            "rebus": "неща/дела",
+            "confectis": "завършени",
+            "fossam": "ров",
+            "fecit": "направи/изкопа"
+        }
+    },
+    {
+        "la": "In eam fossam fructus et humum, quam ex Alba Longa secum portaverat, iecit.",
+        "bg": "В този ров хвърлил плодовете и пръстта, които бе донесъл със себе си от Алба Лонга.",
+        "Урок": 43,
+        "words": {
+            "fossam": "ров",
+            "fructus": "плодове",
+            "humum": "пръст/земя",
+            "secum": "със себе си",
+            "portaverat": "бе донесъл/носил",
+            "iecit": "хвърлил"
+        }
+    },
+    {
+        "la": "Igne facta aram ibi collocavit.",
+        "bg": "След като направил огън, той поставил олтара там.",
+        "Урок": 43,
+        "words": {
+            "igne": "огън",
+            "facta": "направен",
+            "aram": "олтар",
+            "ibi": "там",
+            "collocavit": "поставил"
+        }
+    },
+    {
+        "la": "Deinde aratro sacrum sulcum duxit, in quo urbis moenia dis iuvantibus aedificata sunt.",
+        "bg": "След това с рало изорал свещената бразда, в която градските стени с помощта на боговете бяха построени.",
+        "Урок": 43,
+        "words": {
+            "deinde": "след това",
+            "aratro": "рало",
+            "sacrum": "свещена",
+            "sulcum": "бразда",
+            "duxit": "изорал/прокарал",
+            "moenia": "стени/крепостни стени",
+            "dis": "богове",
+            "iuvantibus": "помагащи",
+            "aedificata sunt": "бяха построени"
+        }
+    },
+    {
+        "la": "Urbe condita, Romulus intra moenia domos edificari iussit.",
+        "bg": "След като градът бил основан, Ромул наредил да се построят къщи вътре в стените.",
+        "Урок": 43,
+        "words": {
+            "urbe": "град",
+            "condita": "основан",
+            "intra": "вътре в",
+            "moenia": "стени",
+            "domos": "къщи",
+            "edificari": "да се построят",
+            "iussit": "наредил"
+        }
+    },
+    {
+        "la": "Postea asylum perfugis aperuit.",
+        "bg": "След това отворил убежище за бегълци.",
+        "Урок": 43,
+        "words": {
+            "postea": "след това",
+            "asylum": "убежище",
+            "perfugis": "бегълци",
+            "aperuit": "отворил"
+        }
+    },
+    {
+        "la": "Asylo dato multi ex finitimis populis Romam venerunt.",
+        "bg": "След като убежището беше предоставено, много хора от съседните народи дойдоха в Рим.",
+        "Урок": 43,
+        "words": {
+            "asylo": "убежище",
+            "dato": "предоставено/дадено",
+            "multi": "много/мнозина",
+            "finitimis": "съседни",
+            "populis": "народи",
+            "venerunt": "дойдоха"
+        }
+    },
+    {
+        "la": "Ita Romulo rege Roma munitionibus et incolis crevit.",
+        "bg": "Така, при управлението на Ромул, Рим нарасна с укрепления и жители.",
+        "Урок": 43,
+        "words": {
+            "ita": "така",
+            "rege": "крал/цар",
+            "munitionibus": "укрепления",
+            "incolis": "жители",
+            "crevit": "нарасна"
+        }
+    },
+    {
+        "la": "Urbem Syracusas maximam esse Graecarum, pulcherrimam omnium saepe audivistis.",
+        "bg": "Често сте чували, че град Сиракуза е най-големият от гръцките и най-красивият от всички.",
+        "Урок": 39,
+        "words": {
+            "urbem": "град",
+            "maximam": "най-голям",
+            "Graecarum": "гръцки",
+            "pulcherrimam": "най-красив",
+            "omnium": "всички",
+            "saepe": "често",
+            "audivistis": "чували сте"
+        }
+    },
+    {
+        "la": "Dicunt eam urbem ex quattuor urbibus maximis constare.",
+        "bg": "Казват, че този град се състои от четири най-големи града.",
+        "Урок": 39,
+        "words": {
+            "dicunt": "казват",
+            "eam": "този/тази",
+            "urbem": "град",
+            "quattuor": "четири",
+            "urbibus": "градове",
+            "maximis": "най-големи",
+            "constare": "състои се"
+        }
+    },
+    {
+        "la": "Quarum una est ea, quae appellatur Insula.",
+        "bg": "Един от тях е този, който се нарича Остров.",
+        "Урок": 39,
+        "words": {
+            "quarum": "от които",
+            "una": "един/една",
+            "quae": "който/която",
+            "appellatur": "нарича се",
+            "Insula": "Остров"
+        }
+    },
+    {
+        "la": "In ea sunt aedes sacrae plures, sed duae celeberrimae sunt: Dianae una et altera, quae fuit ante eius practoris adventum ornatissima, Minervae.",
+        "bg": "В нея има много свещени храмове, но два са най-известни: единият на Диана и другият, който беше най-украсен преди пристигането на този управител, на Минерва.",
+        "Урок": 39,
+        "words": {
+            "aedes": "храмове/сгради",
+            "sacrae": "свещени",
+            "plures": "много/повече",
+            "duae": "два",
+            "celeberrimae": "най-известни",
+            "altera": "другият",
+            "ante": "преди",
+            "practoris": "управител/претор",
+            "adventum": "пристигане",
+            "ornatissima": "най-украсен"
+        }
+    },
+    {
+        "la": "In ea Insula extrema est fons aquae dulcissimae, plenissimus piscium.",
+        "bg": "На този остров в края има извор на най-сладката вода, пълен с риба.",
+        "Урок": 39,
+        "words": {
+            "extrema": "край/крайна",
+            "fons": "извор",
+            "aquae": "вода",
+            "dulcissimae": "най-сладка",
+            "plenissimus": "най-пълен/пълен",
+            "piscium": "риби"
+        }
+    },
+    {
+        "la": "Altera est urbs, cui nomen Achradina est; in qua sunt forum maximum, pulcherrimae porticus, amplissima curia, templum magnificentissimum Iovis Olympii.",
+        "bg": "Другият град, който се нарича Ахрадина, в който се намират най-големият форум, най-красивите порти, най-голямата курия и най-великолепният храм на Юпитер Олимпийски.",
+        "Урок": 39,
+        "words": {
+            "altera": "другият",
+            "nomen": "име",
+            "forum": "форум",
+            "maximum": "най-голям",
+            "pulcherrimae": "най-красиви",
+            "porticus": "порти/колонади",
+            "amplissima": "най-голяма",
+            "curia": "курия",
+            "templum": "храм",
+            "magnificentissimum": "най-великолепен"
+        }
+    },
+    {
+        "la": "Tertia est urbs, quae, quod in ea parte Fortunae templum antiquissimum fuit, Tycha nominata est.",
+        "bg": "Третият е градът, който, понеже в тази част имаше много древен храм на Фортуна, е наречен Тиха.",
+        "Урок": 39,
+        "words": {
+            "tertia": "трети",
+            "quod": "понеже/защото",
+            "parte": "част",
+            "templum": "храм",
+            "antiquissimum": "най-древен",
+            "nominata est": "е наречен"
+        }
+    },
+    {
+        "la": "In ea est gymnasium amplissimum et complures aedes sacrae.",
+        "bg": "В него има много голяма гимназия и множество свещени сгради.",
+        "Урок": 39,
+        "words": {
+            "gymnasium": "гимназия",
+            "amplissimum": "най-голяма/много голяма",
+            "complures": "множество/мнозина",
+            "aedes": "сгради/храмове",
+            "sacrae": "свещени"
+        }
+    },
+    {
+        "la": "Quarta autem, quia postrema coaedificata est, Neapolis nominatur.",
+        "bg": "Четвъртият град, понеже е построен последен, се нарича Неапол.",
+        "Урок": 39,
+        "words": {
+            "quarta": "четвърти",
+            "autem": "пък/а",
+            "quia": "понеже/защото",
+            "postrema": "последен",
+            "coaedificata est": "е построен",
+            "nominatur": "се нарича"
+        }
     }
 ]
