@@ -1388,5 +1388,220 @@
             "coaedificata est": "е построен",
             "nominatur": "се нарича"
         }
+    },
+    {
+        "la": "Urbs Syracusae maxima omnium Graecarum urbium est et maxime celebris.",
+        "bg": "Град Сиракуза е най-големият от всички гръцки градове и най-известният.",
+        "Урок": 35,
+        "words": {
+            "urbs": "град",
+            "maxima": "най-голям",
+            "omnium": "всички",
+            "Graecarum": "гръцки",
+            "urbium": "градове",
+            "maxime": "най-много",
+            "celebris": "известен/прочут"
+        }
+    },
+    {
+        "la": "Ibi sunt multa templa celebria deorum immortalium, sed maxime celebre est templum Minervae.",
+        "bg": "Там има много прочути храмове на безсмъртните богове, но най-известният е храмът на Минерва.",
+        "Урок": 35,
+        "words": {
+            "ibi": "там",
+            "multa": "много",
+            "templa": "храмове",
+            "celebria": "прочути/известни",
+            "deorum": "богове",
+            "immortalium": "безсмъртни",
+            "celebre": "известен",
+            "templum": "храм"
+        }
+    },
+    {
+        "la": "In eo templo pugna erat Agathocli regis in tabulis picta incredibili arte.",
+        "bg": "В този храм беше изобразена битката на цар Агафокъл на картини с невероятно изкуство.",
+        "Урок": 35,
+        "words": {
+            "templo": "храм",
+            "pugna": "битка",
+            "regis": "цар",
+            "tabulis": "картини/дъски",
+            "picta": "изобразена/нарисувана",
+            "incredibili": "невероятно",
+            "arte": "изкуство"
+        }
+    },
+    {
+        "la": "Iis autem tabulis celebribus interiores parietes templi vestiebantur.",
+        "bg": "Но с тези прочути картини били облицовани вътрешните стени на храма.",
+        "Урок": 35,
+        "words": {
+            "iis": "тези",
+            "autem": "обаче/но",
+            "tabulis": "картини/дъски",
+            "celebribus": "прочути",
+            "interiores": "вътрешни",
+            "parietes": "стени",
+            "templi": "храм",
+            "vestiebantur": "облицовани/облечени"
+        }
+    },
+    {
+        "la": "Eae tabulae nobiles M. Marcellus, insignis et acer imperator Romanus, qui brevi tempore Syracusas virtutibus suis militaribus cepit, incolumes reliquit.",
+        "bg": "Тези прочути картини Марк Марцел, известният и смел римски военачалник, който за кратко време превзе Сиракуза със своите военни добродетели, остави непокътнати.",
+        "Урок": 35,
+        "words": {
+            "eae": "тези",
+            "tabulae": "картини",
+            "nobiles": "прочути/знатни",
+            "insignis": "известен/забележителен",
+            "acer": "смел/остър",
+            "imperator": "военачалник/император",
+            "brevi": "кратко",
+            "tempore": "време",
+            "virtutibus": "добродетели",
+            "militaribus": "военни",
+            "cepit": "превзе",
+            "incolumes": "непокътнати",
+            "reliquit": "остави"
+        }
+    },
+    {
+        "la": "Verres autem omnes eas tabulas abstulit.",
+        "bg": "Верес обаче открадна всички тези картини.",
+        "Урок": 35,
+        "words": {
+            "autem": "обаче",
+            "omnes": "всички",
+            "eas": "тези",
+            "tabulas": "картини",
+            "abstulit": "открадна/отнесе"
+        }
+    },
+    {
+        "la": "Parietes, qui tot proelia equestria et pedestria effugerant, tot bella gravia viderant, nudi et tristes ab eo relicti sunt.",
+        "bg": "Стените, по които бяха избягали толкова много конни битки и пехоти, толкова тежки войни бяха видели, бяха оставени от него голи и тъжни.",
+        "Урок": 35,
+        "words": {
+            "parietes": "стени",
+            "tot": "толкова много",
+            "proelia": "битки",
+            "equestria": "конни",
+            "pedestria": "пехотни",
+            "effugerant": "избягали/оцелели",
+            "bella": "войни",
+            "gravia": "тежки",
+            "viderant": "видели",
+            "nudi": "голи",
+            "tristes": "тъжни",
+            "relicti sunt": "бяха оставени"
+        }
+    },
+    {
+        "la": "Nostri, postquam pila in Gallos miserunt, gladiis rem gerunt.",
+        "bg": "Нашите, след като хвърлиха копията в галите, водят битка с мечове.",
+        "Урок": 31,
+        "words": {
+            "nostri": "нашите",
+            "postquam": "след като",
+            "pila": "копия/пилуми",
+            "miserunt": "хвърлиха/изпратиха",
+            "gladiis": "мечове",
+            "rem gerunt": "водят битка"
+        }
+    },
+    {
+        "la": "Utrimque atrociter pugnatur.",
+        "bg": "От двете страни се води жестока битка.",
+        "Урок": 31,
+        "words": {
+            "utrimque": "от двете страни",
+            "atrociter": "жестоко",
+            "pugnatur": "води се битка"
+        }
+    },
+    {
+        "la": "Dux et princeps Lemovicum, a nostris occiditur; dux Arvernorum vivus in fuga capitur.",
+        "bg": "Водачът и принцът на Лемовиците е убит от нашите; водачът на Арверните е заловен жив в бягство.",
+        "Урок": 31,
+        "words": {
+            "dux": "водач/вожд",
+            "princeps": "принц/първенец",
+            "nostris": "нашите",
+            "occiditur": "убит е",
+            "vivus": "жив",
+            "fuga": "бягство",
+            "capitur": "заловен е"
+        }
+    },
+    {
+        "la": "Signa militaria LXXIV ad Caesarem referuntur.",
+        "bg": "Седемдесет и четири военни знамена са върнати на Цезар.",
+        "Урок": 31,
+        "words": {
+            "signa": "знамена/знаци",
+            "militaria": "военни",
+            "referuntur": "върнати са/донесени са"
+        }
+    },
+    {
+        "la": "Magnus numerus Gallorum interficitur; pauci integri se in castra recipiunt.",
+        "bg": "Голям брой гали са убити; малцина невредими се оттеглят в лагера.",
+        "Урок": 31,
+        "words": {
+            "magnus": "голям",
+            "numerus": "брой/число",
+            "interficitur": "убити са",
+            "pauci": "малцина",
+            "integri": "невредими/цели",
+            "castra": "лагер",
+            "recipiunt": "оттеглят се"
+        }
+    },
+    {
+        "la": "Postero die ad Caesarem legati a Gallis mittuntur.",
+        "bg": "На следващия ден пратеници от галите са изпратени при Цезар.",
+        "Урок": 31,
+        "words": {
+            "postero die": "на следващия ден",
+            "legati": "пратеници",
+            "mittuntur": "изпратени са"
+        }
+    },
+    {
+        "la": "Caesar iubet arma tradi ac principes produci.",
+        "bg": "Цезар нарежда оръжията да бъдат предадени и вождовете да бъдат доведени.",
+        "Урок": 31,
+        "words": {
+            "iubet": "нарежда",
+            "arma": "оръжия",
+            "tradi": "да бъдат предадени",
+            "principes": "вождове/първенци",
+            "produci": "да бъдат доведени"
+        }
+    },
+    {
+        "la": "Caesar pro castris consedit; eo duces producuntur.",
+        "bg": "Цезар се установи пред лагера; там се извеждат водачите.",
+        "Урок": 31,
+        "words": {
+            "pro": "пред",
+            "castris": "лагер",
+            "consedit": "установи се/седна",
+            "eo": "там",
+            "duces": "водачи",
+            "producuntur": "извеждат се"
+        }
+    },
+    {
+        "la": "Vercingetorix deditur, arma proiciuntur.",
+        "bg": "Верцингеторикс е предаден, оръжията са хвърлени.",
+        "Урок": 31,
+        "words": {
+            "deditur": "предаден е",
+            "arma": "оръжия",
+            "proiciuntur": "хвърлени са"
+        }
     }
 ]
