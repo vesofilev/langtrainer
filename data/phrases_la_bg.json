@@ -778,5 +778,217 @@
             "semina": "семена",
             "rerum": "неща/дела"
         }
+    },
+    {
+        "la": "Ibant obscuri sola sub nocte per umbram",
+        "bg": "Те вървяха мрачни, в самотната нощ, през сянка",
+        "Урок": 10.3,
+        "words": {
+            "ibant": "вървяха",
+            "obscuri": "мрачни/тъмни",
+            "sola": "самотна",
+            "nocte": "нощ",
+            "umbram": "сянка"
+        }
+    },
+    {
+        "la": "perque domos Ditis vacuas et inania regna:",
+        "bg": "и през празния дом на Дит и през пустите му царства;",
+        "Урок": 10.3,
+        "words": {
+            "perque": "и през",
+            "domos": "дом/домове",
+            "Ditis": "Дит (Плутон)",
+            "vacuas": "празни",
+            "inania": "пусти/празни",
+            "regna": "царства"
+        }
+    },
+    {
+        "la": "quale per incertam lunam sub luce maligna",
+        "bg": "е под несигурна луна, със зла светлина,",
+        "Урок": 10.3,
+        "words": {
+            "quale": "какъвто/както",
+            "incertam": "несигурна/неясна",
+            "lunam": "луна",
+            "luce": "светлина",
+            "maligna": "зла/злокобна"
+        }
+    },
+    {
+        "la": "est iter in silvis, ubi caelum condidit umbra",
+        "bg": "пътят в горите, където Юпитер е скрил небето със сянка",
+        "Урок": 10.3,
+        "words": {
+            "est": "е",
+            "iter": "път",
+            "silvis": "гори",
+            "ubi": "където",
+            "caelum": "небе",
+            "condidit": "скри/скрил",
+            "umbra": "сянка"
+        }
+    },
+    {
+        "la": "Iuppiter, et rebus nox abstulit atra colorem.",
+        "bg": "и черната нощ е отнела на нещата цветовете.",
+        "Урок": 10.3,
+        "words": {
+            "Iuppiter": "Юпитер",
+            "rebus": "неща",
+            "nox": "нощ",
+            "abstulit": "отнела/отне",
+            "atra": "черна/мрачна",
+            "colorem": "цвят"
+        }
+    },
+    {
+        "la": "vestibulum ante ipsum primisque in faucibus Orci",
+        "bg": "Пред самото преддверие и в първите подземия на Ада",
+        "Урок": 10.3,
+        "words": {
+            "vestibulum": "преддверие",
+            "ante": "пред",
+            "ipsum": "самото",
+            "primis": "първи",
+            "faucibus": "подземия/клисура",
+            "Orci": "Ад/Орк"
+        }
+    },
+    {
+        "la": "Luctus et ultrices posuere cubilia Curae,",
+        "bg": "Скръбта и богините на отмъщението поставиха легло на Грижата,",
+        "Урок": 10.3,
+        "words": {
+            "Luctus": "Скръб",
+            "ultrices": "отмъстителни/богини на отмъщението",
+            "posuere": "поставиха",
+            "cubilia": "легло/леговище",
+            "Curae": "Грижа"
+        }
+    },
+    {
+        "la": "pallentesque habitant Morbi tristisque Senectus,",
+        "bg": "там живеят бледните Болести и тъжната Старост,",
+        "Урок": 10.3,
+        "words": {
+            "pallentes": "бледни",
+            "habitant": "живеят/обитават",
+            "Morbi": "Болести",
+            "tristis": "тъжна",
+            "Senectus": "Старост"
+        }
+    },
+    {
+        "la": "et Metus et malesuada Fames ac turpis Egestas,",
+        "bg": "и Страхът, и Гладът, който съветва лошо, и позорната Бедност,",
+        "Урок": 10.3,
+        "words": {
+            "Metus": "Страх",
+            "malesuada": "лошо съветващ",
+            "Fames": "Глад",
+            "turpis": "позорен/срамен",
+            "Egestas": "Бедност/Нищета"
+        }
+    },
+    {
+        "la": "terribiles visu formae, Letumque Labosque;",
+        "bg": "ужасни за гледане форми, и Смърта, и Мъката;",
+        "Урок": 10.3,
+        "words": {
+            "terribiles": "ужасни",
+            "visu": "за гледане",
+            "formae": "форми/образи",
+            "Letum": "Смърт",
+            "Labos": "Мъка/Труд"
+        }
+    },
+    {
+        "la": "tum consanguineus Leti Sopor et mala mentis",
+        "bg": "тогава роднината на Смъртта Сънят и злите радости",
+        "Урок": 10.3,
+        "words": {
+            "tum": "тогава",
+            "consanguineus": "роднина/кръвен",
+            "Leti": "Смърт",
+            "Sopor": "Сън/Дрямка",
+            "mala": "зли/лоши",
+            "mentis": "ум/разум"
+        }
+    },
+    {
+        "la": "Gaudia, mortiferumque adverso in limine Bellum,",
+        "bg": "на ума, насреща е самата Война, която е смъртоностна.",
+        "Урок": 10.3,
+        "words": {
+            "Gaudia": "Радости",
+            "mortiferum": "смъртоносен",
+            "adverso": "насреща/противоположен",
+            "limine": "праг",
+            "Bellum": "Война"
+        }
+    },
+    {
+        "la": "ferreique Eumenidum thalami et Discordia demens",
+        "bg": "и железните легла на Евменидите и безумния Раздор,",
+        "Урок": 10.3,
+        "words": {
+            "ferrei": "железни",
+            "Eumenidum": "Евмениди (Фурии)",
+            "thalami": "легла/стаи",
+            "Discordia": "Раздор",
+            "demens": "безумен/обезумял"
+        }
+    },
+    {
+        "la": "vipereum crinem vittis innexa cruentis.",
+        "bg": "със змийска коса, сплетена с кървави ленти.",
+        "Урок": 10.3,
+        "words": {
+            "vipereum": "змийски",
+            "crinem": "коса",
+            "vittis": "ленти/повивки",
+            "innexa": "сплетена/вплетена",
+            "cruentis": "кървави"
+        }
+    },
+    {
+        "la": "in medio ramos annosaque bracchia pandit",
+        "bg": "В средния клон се разпростираше годишно украсен",
+        "Урок": 10.3,
+        "words": {
+            "medio": "среда/среден",
+            "ramos": "клони",
+            "annosa": "стар/годишен",
+            "bracchia": "ръце/клони",
+            "pandit": "разпростира/разтваря"
+        }
+    },
+    {
+        "la": "ulmus opaca, ingens, quam sedem Somnia vulgo",
+        "bg": "сенчест бряст, огромен, който, казват, че е седалище,",
+        "Урок": 10.3,
+        "words": {
+            "ulmus": "бряст",
+            "opaca": "сенчест/тъмен",
+            "ingens": "огромен",
+            "sedem": "седалище/място",
+            "Somnia": "Сънища",
+            "vulgo": "общо/навсякъде"
+        }
+    },
+    {
+        "la": "vana tenere ferunt, foliisque sub omnibus haerent.",
+        "bg": "което държи празните Сънища, и които висят под всичките му листа.",
+        "Урок": 10.3,
+        "words": {
+            "vana": "празни/суетни",
+            "tenere": "държи/задържа",
+            "ferunt": "казват/носят",
+            "foliis": "листа",
+            "omnibus": "всички",
+            "haerent": "висят/залепват"
+        }
     }
 ]
