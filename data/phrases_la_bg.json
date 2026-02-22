@@ -1603,5 +1603,139 @@
             "arma": "оръжия",
             "proiciuntur": "хвърлени са"
         }
+    },
+    {
+        "la": "Hercules in trivia sedebat et de recta vitae via cogitabat.",
+        "bg": "Херкулес седеше на кръстопът и размишляваше за правия път в живота.",
+        "Урок": 27,
+        "words": {
+            "trivia": "кръстопът",
+            "sedebat": "седеше",
+            "recta": "правия/правилен",
+            "vitae": "живот",
+            "via": "път",
+            "cogitabat": "размишляваше"
+        }
+    },
+    {
+        "la": "Duae feminae Herculi appropinquaverunt.",
+        "bg": "Две жени се приближиха до Херкулес.",
+        "Урок": 27,
+        "words": {
+            "duae": "две",
+            "feminae": "жени",
+            "appropinquaverunt": "приближиха се"
+        }
+    },
+    {
+        "la": "Altera: \"Quid, inquit, dubitas?\"",
+        "bg": "Другата: \"Какво, каза тя, се колебаеш?\"",
+        "Урок": 27,
+        "words": {
+            "altera": "другата",
+            "quid": "какво",
+            "inquit": "каза",
+            "dubitas": "колебаеш се"
+        }
+    },
+    {
+        "la": "Ego tibi rectam viam monstrabo.",
+        "bg": "Аз ще ти покажа правилния път.",
+        "Урок": 27,
+        "words": {
+            "ego": "аз",
+            "tibi": "на теб",
+            "rectam": "правилен",
+            "viam": "път",
+            "monstrabo": "ще покажа"
+        }
+    },
+    {
+        "la": "Si hodie mecum veneris, vita tua sine laboribus semper iucunda erit.",
+        "bg": "Ако дойдеш с мен днес, животът ти винаги ще бъде приятен без трудности.",
+        "Урок": 27,
+        "words": {
+            "si": "ако",
+            "hodie": "днес",
+            "mecum": "с мен",
+            "veneris": "дойдеш",
+            "vita": "живот",
+            "sine": "без",
+            "laboribus": "трудности/трудове",
+            "semper": "винаги",
+            "iucunda": "приятен",
+            "erit": "ще бъде"
+        }
+    },
+    {
+        "la": "Tum Hercules interrogavit: \"Quis es?\"",
+        "bg": "Тогава Херкулес попита: \"Кой си ти?\"",
+        "Урок": 27,
+        "words": {
+            "tum": "тогава",
+            "interrogavit": "попита",
+            "quis": "кой",
+            "es": "си"
+        }
+    },
+    {
+        "la": "Inimici Vitium me vocant, amici autem Voluptatem.",
+        "bg": "Враговете ме наричат Порок, а приятелите – Наслада.",
+        "Урок": 27,
+        "words": {
+            "inimici": "врагове",
+            "Vitium": "Порок",
+            "vocant": "наричат",
+            "amici": "приятели",
+            "autem": "а/пък",
+            "Voluptatem": "Наслада"
+        }
+    },
+    {
+        "la": "Altera diu tacuerat, sed postea: \"Alteram viam tibi monstrabo, inquit, vita tua laboriosa et molesta erit, si mecum veneris.\"",
+        "bg": "Другата дълго мълчеше, но после каза: \"Ще ти покажа друг път, животът ти ще бъде труден и неприятен, ако дойдеш с мен.\"",
+        "Урок": 27,
+        "words": {
+            "altera": "другата",
+            "diu": "дълго",
+            "tacuerat": "мълчеше",
+            "postea": "после/след това",
+            "alteram": "друг",
+            "viam": "път",
+            "monstrabo": "ще покажа",
+            "laboriosa": "труден",
+            "molesta": "неприятен/досаден"
+        }
+    },
+    {
+        "la": "Si incolas terrarum a monstris liberaveris et magnis periculis servaveris, gloria tibi aeterna erit.",
+        "bg": "Ако освободиш жителите на земите от чудовищата и ги спасиш от големите опасности, ще имаш вечна слава.",
+        "Урок": 27,
+        "words": {
+            "incolas": "жители",
+            "terrarum": "земи",
+            "monstris": "чудовища",
+            "liberaveris": "освободиш",
+            "magnis": "големи",
+            "periculis": "опасности",
+            "servaveris": "спасиш",
+            "gloria": "слава",
+            "aeterna": "вечна"
+        }
+    },
+    {
+        "la": "Non diu Hercules cogitavit, asperam vitam rectam esse iudicavit.",
+        "bg": "Херкулес не мисли дълго, реши, че суровият живот е правилен.",
+        "Урок": 27,
+        "words": {
+            "non": "не",
+            "diu": "дълго",
+            "cogitavit": "мислил/размишлявал",
+            "asperam": "суров/труден",
+            "vitam": "живот",
+            "rectam": "правилен",
+            "esse": "е/да бъде",
+            "iudicavit": "реши/прецени"
+        }
     }
 ]
