@@ -852,5 +852,138 @@
             "cives": "граждани",
             "Romani": "римски"
         }
+    },
+    {
+        "la": "Apud Gallorum nemini fas est, si quis quid de re publica rumore aut fama accepit, cum quo alio communicare.",
+        "bg": "При галите никому не е позволено: ако някой е чул по слух или по мълва нещо за държавните дела, да го споделя с когото и да било другиго.",
+        "Урок": 51,
+        "words": {
+            "apud": "при/сред",
+            "nemini": "никому",
+            "fas est": "позволено е",
+            "re publica": "държавни дела",
+            "rumore": "слух",
+            "fama": "мълва/репутация",
+            "accepit": "чул/получил",
+            "communicare": "споделя/съобщава"
+        }
+    },
+    {
+        "la": "Nam saepe unus quisque falsa quadam fama terretur et ad quoddam facinus impelli.",
+        "bg": "Защото често всеки се плаши от някаква фалшива репутация и бива принуден към определено престъпление.",
+        "Урок": 51,
+        "words": {
+            "nam": "защото",
+            "saepe": "често",
+            "unus quisque": "всеки",
+            "falsa": "фалшива",
+            "fama": "мълва/репутация",
+            "terretur": "плаши се",
+            "facinus": "престъпление",
+            "impelli": "бива принуден"
+        }
+    },
+    {
+        "la": "Magistratus quodcumque is placet occultant; quidquid esse ex usu iudicaverunt, multitudini produnt.",
+        "bg": "Магистратите скриват каквото им е угодно; каквото преценят, че е полезно, разкриват пред народа.",
+        "Урок": 51,
+        "words": {
+            "magistratus": "магистрати",
+            "quodcumque": "каквото и да",
+            "placet": "угодно/харесва",
+            "occultant": "скриват",
+            "quidquid": "каквото",
+            "ex usu": "полезно",
+            "iudicaverunt": "преценят/решат",
+            "multitudini": "народ/тълпа",
+            "produnt": "разкриват"
+        }
+    },
+    {
+        "la": "Druides de omnibus controversiis constituunt et si quod est admissum facinus, si caedes facta, iidem soli decernunt.",
+        "bg": "Друидите решават всички спорове и ако някакво престъпление е извършено, ако има убийство, те самите единствени решават.",
+        "Урок": 51,
+        "words": {
+            "Druides": "Друиди",
+            "omnibus": "всички",
+            "controversiis": "спорове",
+            "constituunt": "решават/определят",
+            "admissum": "извършено",
+            "facinus": "престъпление",
+            "caedes": "убийство",
+            "iidem": "те самите",
+            "soli": "единствени",
+            "decernunt": "решават/постановяват"
+        }
+    },
+    {
+        "la": "Si qui eorum decreto non stetit, sacrificiis interdicunt; apud eos nulla poena gravior est.",
+        "bg": "Ако някой от тях не се подчини на решението, те го лишават от жертвоприношения; при тях няма по-тежко наказание.",
+        "Урок": 51,
+        "words": {
+            "decreto": "решение/указ",
+            "stetit": "подчини се/застана",
+            "sacrificiis": "жертвоприношения",
+            "interdicunt": "лишават/забраняват",
+            "nulla": "никакво",
+            "poena": "наказание",
+            "gravior": "по-тежко"
+        }
+    },
+    {
+        "la": "Druides certo anni tempore considunt in loco consecrato, qui totius Galliae medius habetur.",
+        "bg": "Друидите в определено време от годината се събират на свещено място, което се смята за средата на цяла Галия.",
+        "Урок": 51,
+        "words": {
+            "certo": "определено",
+            "anni": "година",
+            "tempore": "време",
+            "considunt": "събират се/сядат",
+            "loco": "място",
+            "consecrato": "свещено/осветено",
+            "totius": "цяла",
+            "medius": "среда/среден",
+            "habetur": "смята се/счита се"
+        }
+    },
+    {
+        "la": "Incitati praemiis, multi in disciplinam conveniunt.",
+        "bg": "Подтикнати от награди, мнозина се събират за обучение.",
+        "Урок": 51,
+        "words": {
+            "incitati": "подтикнати",
+            "praemiis": "награди",
+            "multi": "мнозина/много",
+            "disciplinam": "обучение/дисциплина",
+            "conveniunt": "събират се"
+        }
+    },
+    {
+        "la": "Nonnulli vicenos annos in disciplina permanent.",
+        "bg": "Някои остават в обучение двадесет години.",
+        "Урок": 51,
+        "words": {
+            "nonnulli": "някои",
+            "vicenos": "двадесет",
+            "annos": "години",
+            "disciplina": "обучение",
+            "permanent": "остават"
+        }
+    },
+    {
+        "la": "Imprimis persuadent non interire animas, sed ab aliis post mortem transire ad alios.",
+        "bg": "На първо място, те убеждават, че душите не загиват, а преминават от едни към други след смъртта.",
+        "Урок": 51,
+        "words": {
+            "imprimis": "на първо място",
+            "persuadent": "убеждават",
+            "interire": "загиват/умират",
+            "animas": "души",
+            "aliis": "едни/други",
+            "post": "след",
+            "mortem": "смърт",
+            "transire": "преминават",
+            "alios": "други"
+        }
     }
 ]
