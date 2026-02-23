@@ -1737,5 +1737,163 @@
             "esse": "е/да бъде",
             "iudicavit": "реши/прецени"
         }
+    },
+    {
+        "la": "Summi magistratus rem publicam Romanam gesserunt.",
+        "bg": "Висшите магистрати управляваха римската държава.",
+        "Урок": 23,
+        "words": {
+            "summi": "висши/най-висши",
+            "magistratus": "магистрати",
+            "rem publicam": "държава/република",
+            "Romanam": "римска",
+            "gesserunt": "управляваха/водиха"
+        }
+    },
+    {
+        "la": "Romani duos consules quotannis creaverunt.",
+        "bg": "Римляните избираха двама консули всяка година.",
+        "Урок": 23,
+        "words": {
+            "duos": "двама",
+            "consules": "консули",
+            "quotannis": "всяка година",
+            "creaverunt": "избираха/създаваха"
+        }
+    },
+    {
+        "la": "Consules optimi oratores fuerunt.",
+        "bg": "Консулите бяха най-добрите оратори.",
+        "Урок": 23,
+        "words": {
+            "consules": "консули",
+            "optimi": "най-добри",
+            "oratores": "оратори",
+            "fuerunt": "бяха"
+        }
+    },
+    {
+        "la": "Una cum senatu de bello et de pace decreverunt.",
+        "bg": "Те решиха за войната и мира заедно със сената.",
+        "Урок": 23,
+        "words": {
+            "una": "заедно",
+            "cum": "със/с",
+            "senatu": "сенат",
+            "bello": "война",
+            "pace": "мир",
+            "decreverunt": "решиха/постановиха"
+        }
+    },
+    {
+        "la": "In bellis imperatores exercituum fuerunt.",
+        "bg": "Във войните те са били командири (военачалници) на войските.",
+        "Урок": 23,
+        "words": {
+            "bellis": "войни",
+            "imperatores": "командири/военачалници",
+            "exercituum": "войски",
+            "fuerunt": "бяха/били са"
+        }
+    },
+    {
+        "la": "Praetores in tribunali ius dixerunt.",
+        "bg": "Преторите произнесоха правосъдие в трибунала.",
+        "Урок": 23,
+        "words": {
+            "praetores": "претори",
+            "tribunali": "трибунал",
+            "ius": "право/правосъдие",
+            "dixerunt": "произнесоха/казаха"
+        }
+    },
+    {
+        "la": "Aediles aedificia publica curaverunt.",
+        "bg": "Едилите се погрижиха за обществените сгради.",
+        "Урок": 23,
+        "words": {
+            "aediles": "едили",
+            "aedificia": "сгради",
+            "publica": "обществени",
+            "curaverunt": "погрижиха се"
+        }
+    },
+    {
+        "la": "Praeterea ludos publicos paraverunt et ordinem custodiverunt.",
+        "bg": "Освен това организираха обществени игри и поддържаха реда.",
+        "Урок": 23,
+        "words": {
+            "praeterea": "освен това",
+            "ludos": "игри",
+            "publicos": "обществени",
+            "paraverunt": "организираха/подготвиха",
+            "ordinem": "ред",
+            "custodiverunt": "поддържаха/пазиха"
+        }
+    },
+    {
+        "la": "Quaestores de pecunia publica diligentiam praebuerunt.",
+        "bg": "Квесторите проявиха усърдие относно обществените пари.",
+        "Урок": 23,
+        "words": {
+            "quaestores": "квестори",
+            "pecunia": "пари",
+            "publica": "обществени",
+            "diligentiam": "усърдие/грижа",
+            "praebuerunt": "проявиха/предоставиха"
+        }
+    },
+    {
+        "la": "Tribuni plebis sacrosancti fuerunt et ius intercessionis habuerunt.",
+        "bg": "Народните трибуни бяха свещени и имаха право на вето.",
+        "Урок": 23,
+        "words": {
+            "tribuni": "трибуни",
+            "plebis": "народни/плебейски",
+            "sacrosancti": "свещени/неприкосновени",
+            "ius": "право",
+            "intercessionis": "вето/намеса",
+            "habuerunt": "имаха"
+        }
+    },
+    {
+        "la": "Censores censum egerunt et ultra annum in magistratu manserunt.",
+        "bg": "Цензорите проведоха преброяването и останаха на поста повече от година.",
+        "Урок": 23,
+        "words": {
+            "censores": "цензори",
+            "censum": "преброяване/ценз",
+            "egerunt": "проведоха",
+            "ultra": "повече от/отвъд",
+            "annum": "година",
+            "magistratu": "пост/магистратура",
+            "manserunt": "останаха"
+        }
+    },
+    {
+        "la": "Aetate imperatorum magistratus non iam tantam potestatem in civitate habuerunt.",
+        "bg": "По времето на императорите магистратите вече не са имали толкова голяма власт в държавата.",
+        "Урок": 23,
+        "words": {
+            "aetate": "време/епоха",
+            "imperatorum": "императори",
+            "non iam": "вече не",
+            "tantam": "толкова голяма",
+            "potestatem": "власт",
+            "civitate": "държава/град",
+            "habuerunt": "имали са"
+        }
+    },
+    {
+        "la": "Apud Romanos tamen in magno honore fuerunt.",
+        "bg": "Обаче при римляните бяха на голяма почит.",
+        "Урок": 23,
+        "words": {
+            "apud": "при/сред",
+            "tamen": "обаче/все пак",
+            "magno": "голяма",
+            "honore": "почит/чест",
+            "fuerunt": "бяха"
+        }
     }
 ]
