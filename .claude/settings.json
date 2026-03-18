@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(conda env:*)",
+      "Bash(python -m py_compile app.py)",
+      "Read(//Users/vfilev/**)"
+    ]
+  }
+}

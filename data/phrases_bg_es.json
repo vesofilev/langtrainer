@@ -1,0 +1,22 @@
+[
+  {"bg": "Здравей", "es": "Hola"},
+  {"bg": "Добро утро", "es": "Buenos días"},
+  {"bg": "Добър ден", "es": "Buenas tardes"},
+  {"bg": "Лека нощ", "es": "Buenas noches"},
+  {"bg": "Как си?", "es": "¿Cómo estás?"},
+  {"bg": "Добре съм", "es": "Estoy bien"},
+  {"bg": "Моля", "es": "Por favor"},
+  {"bg": "Благодаря", "es": "Gracias"},
+  {"bg": "Няма защо", "es": "De nada"},
+  {"bg": "Извинявай", "es": "Perdón"},
+  {"bg": "Съжалявам", "es": "Lo siento"},
+  {"bg": "Да", "es": "Sí"},
+  {"bg": "Не", "es": "No"},
+  {"bg": "Къде е тоалетната?", "es": "¿Dónde está el baño?"},
+  {"bg": "Не разбирам", "es": "No entiendo"},
+  {"bg": "Можеш ли да повториш?", "es": "¿Puedes repetir?"},
+  {"bg": "Колко струва?", "es": "¿Cuánto cuesta?"},
+  {"bg": "Говориш ли английски?", "es": "¿Hablas inglés?"},
+  {"bg": "Казвам се...", "es": "Me llamo..."},
+  {"bg": "Приятно ми е", "es": "Mucho gusto"}
+]

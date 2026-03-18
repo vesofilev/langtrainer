@@ -1,9 +1,98 @@
 /* ==================== Screen Visibility ==================== */
 
-.setup-screen, .quiz-screen, .summary-screen, .training-screen {
+.setup-screen, .quiz-screen, .summary-screen, .training-screen, .study-guide-screen, .cross-exam-screen {
     display: none;
 }
 
-.setup-screen.active, .quiz-screen.active, .summary-screen.active, .training-screen.active {
+.setup-screen.active, .quiz-screen.active, .summary-screen.active, .training-screen.active, .study-guide-screen.active, .cross-exam-screen.active {
     display: block;
+}
+
+/* ==================== Biology Study Guide ==================== */
+
+.study-guide-overview {
+    background: #e8f5e9;
+    border-left: 4px solid #2e7d32;
+    padding: 14px 18px;
+    border-radius: 6px;
+    margin-bottom: 20px;
+    font-size: 0.97em;
+    color: #1b5e20;
+    line-height: 1.6;
+}
+
+.study-guide-section {
+    background: #fff;
+    border: 1px solid #c8e6c9;
+    border-radius: 8px;
+    padding: 18px 20px;
+    margin-bottom: 16px;
+}
+
+.study-guide-section-title {
+    color: #2e7d32;
+    font-size: 1.05em;
+    margin: 0 0 8px 0;
+}
+
+.study-guide-summary {
+    color: #555;
+    font-size: 0.93em;
+    margin: 0 0 12px 0;
+}
+
+.study-guide-must-know ul,
+.study-guide-compare ul {
+    margin: 6px 0 0 0;
+    padding-left: 20px;
+}
+
+.study-guide-must-know li,
+.study-guide-compare li {
+    margin-bottom: 5px;
+    font-size: 0.93em;
+    line-height: 1.5;
+}
+
+.study-guide-key-terms dl {
+    margin: 6px 0 0 0;
+}
+
+.study-guide-key-terms dt {
+    font-weight: 600;
+    color: #1b5e20;
+    margin-top: 8px;
+    font-size: 0.93em;
+}
+
+.study-guide-key-terms dd {
+    margin: 2px 0 0 16px;
+    color: #444;
+    font-size: 0.91em;
+}
+
+.study-guide-recap {
+    background: #fff9c4;
+    border: 2px solid #f9a825;
+    border-radius: 8px;
+    padding: 18px 20px;
+    margin-top: 20px;
+}
+
+.study-guide-recap h3 {
+    color: #e65100;
+    margin: 0 0 10px 0;
+    font-size: 1em;
+}
+
+.study-guide-recap ul {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.study-guide-recap li {
+    margin-bottom: 6px;
+    font-size: 0.93em;
+    line-height: 1.5;
+    font-weight: 500;
 }

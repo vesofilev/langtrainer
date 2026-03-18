@@ -45,6 +45,7 @@ class LanguageMode:
     LATIN = "latin"
     SPANISH = "spanish"
     LITERATURE = "literature"
+    BIOLOGY = "biology"
 
 
 class Direction:
@@ -57,6 +58,7 @@ class Direction:
     BULGARIAN_TO_SPANISH = "bulgarian_to_spanish"
     SPANISH_MIXED = "spanish_mixed"  # Combined es->bg and bg->es
     LITERATURE_QA = "literature_qa"
+    BIOLOGY_QA = "biology_qa"
 
 
 class WordPair(BaseModel):
@@ -430,6 +432,8 @@ class WordRepository:
 # ==================== Literature (BG) ====================
 
 LITERATURE_MASTERED_THRESHOLD = 85  # percent
+BIOLOGY_MASTERED_THRESHOLD = 85  # percent
+CROSS_EXAM_MASTERED_THRESHOLD = 70  # percent — minimum score to consider a cross-exam question "passed"
 
 # ==================== Verse Translation ====================
 
@@ -690,6 +694,75 @@ class LiteratureRepository:
         return [lookup[qid] for qid in question_ids]
 
 
+class BiologyRepository:
+    """Loads biology quiz topics and study guides from data/biology/.
+
+    Quiz files:        data/biology/<name>.json          (must NOT end with _study_guide)
+    Study guide files: data/biology/<name>_study_guide.json
+    """
+
+    def __init__(self, data_dir: str = "data/biology"):
+        self.data_dir = Path(data_dir)
+        self.topics: Dict[str, LiteratureTopic] = {}
+        self.study_guides: Dict[str, Dict] = {}
+        self._load_all()
+
+    def _load_all(self) -> None:
+        if not self.data_dir.exists():
+            print(f"[{get_timestamp()}] ⚠️  Biology data dir not found: {self.data_dir}")
+            return
+
+        for path in sorted(self.data_dir.glob("*.json")):
+            try:
+                payload = json.loads(path.read_text(encoding="utf-8"))
+                if path.stem.endswith("_study_guide"):
+                    topic_id = payload.get("topic_id")
+                    if topic_id:
+                        self.study_guides[topic_id] = payload
+                else:
+                    topic = LiteratureTopic(**payload)
+                    self.topics[topic.topic_id] = topic
+            except Exception as e:
+                print(f"[{get_timestamp()}] ⚠️  Failed loading biology file {path}: {e}")
+
+        print(f"[{get_timestamp()}] ✓ Loaded {len(self.topics)} biology topic(s) and {len(self.study_guides)} study guide(s)")
+
+    def list_topics(self) -> List[Dict[str, Any]]:
+        return [
+            {
+                "topic_id": t.topic_id,
+                "title": t.title,
+                "question_count": len(t.questions),
+                "has_study_guide": t.topic_id in self.study_guides,
+            }
+            for t in self.topics.values()
+        ]
+
+    def get_topic(self, topic_id: str) -> LiteratureTopic:
+        if topic_id not in self.topics:
+            raise HTTPException(status_code=404, detail=f"Unknown biology topic: {topic_id}")
+        return self.topics[topic_id]
+
+    def get_question_count(self, topic_id: str) -> int:
+        return len(self.get_topic(topic_id).questions)
+
+    def get_questions(self, topic_id: str) -> List[LiteratureQuestion]:
+        return list(self.get_topic(topic_id).questions)
+
+    def get_questions_by_ids(self, topic_id: str, question_ids: List[str]) -> List[LiteratureQuestion]:
+        topic = self.get_topic(topic_id)
+        lookup = {q.id: q for q in topic.questions}
+        missing = [qid for qid in question_ids if qid not in lookup]
+        if missing:
+            raise HTTPException(status_code=400, detail=f"Unknown question id(s): {missing}")
+        return [lookup[qid] for qid in question_ids]
+
+    def get_study_guide(self, topic_id: str) -> Dict:
+        if topic_id not in self.study_guides:
+            raise HTTPException(status_code=404, detail=f"No study guide found for biology topic: {topic_id}")
+        return self.study_guides[topic_id]
+
+
 class LiteratureOpenAIGrader:
     """Grades open-ended answers against a gold reference using OpenAI Responses API."""
 
@@ -756,6 +829,242 @@ class LiteratureOpenAIGrader:
         except Exception:
             # Fallback: very conservative
             return 0, "Грешка при оценяването: неуспешно парсване на отговор от модела."
+
+
+class BiologyOpenAIGrader(LiteratureOpenAIGrader):
+    """Grades biology open-ended answers with a subject-specific prompt."""
+
+    def grade(self, *, question: str, reference_answer: str, student_answer: str) -> tuple[int, str]:
+        client = self._client()
+
+        system = (
+            "Ти си строг учител по биология (на български). "
+            "Оцени отговора на ученика спрямо ЕТАЛОННИЯ отговор. "
+            "Вземи предвид правилното разбиране на биологичните понятия, йерархии и процеси. "
+            "Върни само валиден JSON с ключове: score_percent (0-100 цяло число) и notes (кратки бележки на български: какво липсва/какво да се подобри). "
+            "Не цитирай дълги пасажи; предпочитай пунктуални указания."
+        )
+
+        user = (
+            f"ВЪПРОС:\n{question}\n\n"
+            f"ЕТАЛОНЕН ОТГОВОР (златен стандарт):\n{reference_answer}\n\n"
+            f"ОТГОВОР НА УЧЕНИКА:\n{student_answer}\n\n"
+            "Оцени точно спрямо еталона."
+        )
+
+        resp = client.responses.create(
+            model=self.model,
+            input=[
+                {"role": "system", "content": system},
+                {"role": "user", "content": user},
+            ],
+            temperature=0.2,
+        )
+
+        text = getattr(resp, "output_text", None) or ""
+        text = text.strip()
+        try:
+            data = json.loads(text)
+            if not isinstance(data, dict):
+                score = 0
+                notes_obj = data
+            else:
+                score = int(max(0, min(100, data.get("score_percent", 0))))
+                notes_obj = data.get("notes", "")
+            if isinstance(notes_obj, list):
+                notes = "\n".join(str(x).strip() for x in notes_obj if str(x).strip()).strip()
+            elif isinstance(notes_obj, dict):
+                notes = json.dumps(notes_obj, ensure_ascii=False, indent=2).strip()
+            else:
+                notes = str(notes_obj).strip()
+            return score, notes
+        except Exception:
+            return 0, "Грешка при оценяването: неуспешно парсване на отговор от модела."
+
+
+class CrossExamSession:
+    """Stores state for one cross-examination session (questions generated by LLM from source markdown)."""
+
+    def __init__(self, session_id: str, topic_id: str, questions: List[str], source_content: str):
+        self.session_id = session_id
+        self.topic_id = topic_id
+        self.questions = questions
+        self.source_content = source_content  # markdown text used as ground-truth for evaluation
+        self.answers: List[Optional[str]] = [None] * len(questions)
+        self.scores: List[Optional[int]] = [None] * len(questions)
+        self.notes_list: List[Optional[str]] = [None] * len(questions)
+        self.created_at: datetime = datetime.now()
+
+    def record_answer(self, idx: int, answer: str, score: int, notes: str) -> None:
+        self.answers[idx] = answer
+        self.scores[idx] = score
+        self.notes_list[idx] = notes
+
+    @property
+    def total_answered(self) -> int:
+        return sum(1 for a in self.answers if a is not None)
+
+    def get_summary(self) -> Dict:
+        answered_indices = [i for i, a in enumerate(self.answers) if a is not None]
+        scores_answered = [self.scores[i] for i in answered_indices if self.scores[i] is not None]
+        avg_score = round(sum(scores_answered) / len(scores_answered)) if scores_answered else 0
+        return {
+            "session_id": self.session_id,
+            "topic_id": self.topic_id,
+            "total_questions": len(self.questions),
+            "total_answered": len(answered_indices),
+            "average_score": avg_score,
+            "questions": [
+                {
+                    "index": i,
+                    "question": self.questions[i],
+                    "answer": self.answers[i],
+                    "score_percent": self.scores[i],
+                    "notes": self.notes_list[i],
+                    "passed": (self.scores[i] or 0) >= CROSS_EXAM_MASTERED_THRESHOLD,
+                }
+                for i in answered_indices
+            ],
+            "failed_question_indices": [
+                i for i in answered_indices
+                if (self.scores[i] or 0) < CROSS_EXAM_MASTERED_THRESHOLD
+            ],
+        }
+
+
+class CrossExamGenerator:
+    """Generates cross-exam questions from a markdown source file and evaluates student answers."""
+
+    def __init__(self, model: str = "gpt-5.2"):
+        self.model = model
+
+    def _client(self):
+        if OpenAI is None:
+            raise HTTPException(status_code=500, detail="OpenAI SDK not installed")
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            raise HTTPException(status_code=500, detail="OPENAI_API_KEY is not set")
+        return OpenAI(api_key=api_key)
+
+    def load_source(self, source_path: str) -> str:
+        """Read markdown source, falling back to appending '.md' if the path has no extension."""
+        path = Path(source_path)
+        if not path.exists():
+            path_md = Path(source_path + ".md")
+            if path_md.exists():
+                path = path_md
+            else:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Source file not found: {source_path} (also tried {source_path}.md)"
+                )
+        return path.read_text(encoding="utf-8")
+
+    def _strip_fences(self, text: str) -> str:
+        """Remove markdown code fences from LLM output."""
+        text = text.strip()
+        if text.startswith("```"):
+            parts = text.split("```")
+            # parts[0] is empty, parts[1] is the fenced block, possibly starting with 'json\n'
+            inner = parts[1]
+            if inner.startswith("json"):
+                inner = inner[4:]
+            text = inner.strip()
+        return text
+
+    def generate_questions(self, source_content: str, count: int) -> List[str]:
+        """Ask the LLM to produce *count* exam questions for the given markdown lesson."""
+        client = self._client()
+
+        system = (
+            f"Ти си опитен учител по биология. Задачата ти е да съставиш точно {count} въпроса "
+            "за устна проверка на знанията на ученик по дадения урок.\n"
+            "Изисквания за въпросите:\n"
+            "• Всеки въпрос проверява РАЗЛИЧЕН аспект от урока — без повторения.\n"
+            "• Включвай различни нива на мислене: дефиниции, разбиране, сравнение, "
+            "приложение, причинно-следствени връзки.\n"
+            "• Формулирай ясно и на академичен български.\n"
+            "• Избягвай да/не въпроси и въпроси с тривиален едносричен отговор.\n"
+            "• НЕ включвай отговорите — само въпросите.\n"
+            f"Върни САМО валиден JSON масив от точно {count} низа (въпросите), без никакъв допълнителен текст."
+        )
+
+        user = (
+            f"СЪДЪРЖАНИЕ НА УРОКА:\n\n{source_content}\n\n"
+            f"Състави точно {count} въпроса по горното съдържание."
+        )
+
+        resp = client.responses.create(
+            model=self.model,
+            input=[
+                {"role": "system", "content": system},
+                {"role": "user", "content": user},
+            ],
+            temperature=0.7,
+        )
+
+        text = self._strip_fences(getattr(resp, "output_text", None) or "")
+        try:
+            questions = json.loads(text)
+            if not isinstance(questions, list):
+                raise ValueError("Expected a JSON array")
+            result = [str(q).strip() for q in questions if str(q).strip()][:count]
+            if not result:
+                raise ValueError("Empty question list")
+            return result
+        except Exception as exc:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to parse generated questions: {exc}. Raw output: {text[:300]}"
+            )
+
+    def evaluate_answer(self, source_content: str, question: str, student_answer: str) -> tuple[int, str]:
+        """Evaluate a student's answer against the lesson source. Returns (score_percent, notes)."""
+        client = self._client()
+
+        system = (
+            "Ти си строг, но справедлив учител по биология. "
+            "Оценяваш отговора на ученика ЕДИНСТВЕНО спрямо съдържанието на урока — "
+            "той е твоят единствен еталон за истина.\n"
+            "Критерии за оценка:\n"
+            "• Фактическа точност спрямо урока.\n"
+            "• Пълнота — покрива ли отговорът основните аспекти на въпроса.\n"
+            "• Биологична коректност на използваната терминология.\n"
+            "Бъди гъвкав с формулировките — перифразирането е напълно допустимо, "
+            "стига съдържанието да е фактически вярно спрямо урока.\n"
+            "Върни САМО валиден JSON с два ключа:\n"
+            "  \"score_percent\": цяло число 0–100\n"
+            "  \"notes\": 2–3 изречения на български — какво е правилно, какво липсва или е неточно"
+        )
+
+        user = (
+            f"СЪДЪРЖАНИЕ НА УРОКА (единствен еталон за оценяване):\n\n{source_content}\n\n"
+            f"ВЪПРОС: {question}\n\n"
+            f"ОТГОВОР НА УЧЕНИКА: {student_answer}\n\n"
+            "Оцени отговора спрямо урока."
+        )
+
+        resp = client.responses.create(
+            model=self.model,
+            input=[
+                {"role": "system", "content": system},
+                {"role": "user", "content": user},
+            ],
+            temperature=0.2,
+        )
+
+        text = self._strip_fences(getattr(resp, "output_text", None) or "")
+        try:
+            data = json.loads(text)
+            score = int(max(0, min(100, data.get("score_percent", 0))))
+            notes_raw = data.get("notes", "")
+            if isinstance(notes_raw, list):
+                notes = "\n".join(str(x).strip() for x in notes_raw if str(x).strip())
+            else:
+                notes = str(notes_raw).strip()
+            return score, notes
+        except Exception:
+            return 0, "Грешка при оценяването: неуспешно парсване на отговора от модела."
 
 
 class LiteratureSession:
@@ -1367,8 +1676,12 @@ app.add_middleware(
 # Initialize services
 word_repo = WordRepository()
 literature_repo = LiteratureRepository()
+biology_repo = BiologyRepository()
 literature_grader = LiteratureOpenAIGrader(model=os.getenv("LITERATURE_GRADING_MODEL", "gpt-5.2"))
+biology_grader = BiologyOpenAIGrader(model=os.getenv("BIOLOGY_GRADING_MODEL", os.getenv("LITERATURE_GRADING_MODEL", "gpt-5.2")))
 verse_grader = VerseTranslationGrader(model=os.getenv("VERSE_GRADING_MODEL", os.getenv("LITERATURE_GRADING_MODEL", "gpt-5.2")))
+cross_exam_generator = CrossExamGenerator(model=os.getenv("CROSS_EXAM_MODEL", os.getenv("BIOLOGY_GRADING_MODEL", os.getenv("LITERATURE_GRADING_MODEL", "gpt-5.2"))))
+cross_exam_sessions: Dict[str, CrossExamSession] = {}
 session_manager = SessionManager()
 
 
@@ -1417,6 +1730,13 @@ async def get_config(language_mode: str = LanguageMode.GREEK):
             {"value": Direction.LITERATURE_QA, "label": "Въпрос → Отговор"}
         ]
         has_lessons = False
+    elif language_mode == LanguageMode.BIOLOGY:
+        available_lessons = []
+        total_words = 0
+        directions = [
+            {"value": Direction.BIOLOGY_QA, "label": "Въпрос → Отговор"}
+        ]
+        has_lessons = False
     else:
         raise HTTPException(status_code=400, detail="Invalid language_mode")
     
@@ -1436,6 +1756,13 @@ async def get_config(language_mode: str = LanguageMode.GREEK):
 
     if language_mode == LanguageMode.LITERATURE:
         topics = literature_repo.list_topics()
+        payload["topics"] = topics
+        payload["default_count"] = 10
+        payload["max_count"] = 200
+        payload["total_words"] = sum(t["question_count"] for t in topics)
+
+    if language_mode == LanguageMode.BIOLOGY:
+        topics = biology_repo.list_topics()
         payload["topics"] = topics
         payload["default_count"] = 10
         payload["max_count"] = 200
@@ -1493,6 +1820,11 @@ async def get_words_count(request: Dict):
         if not topic_id:
             raise HTTPException(status_code=400, detail="topic_id is required for literature")
         return {"count": literature_repo.get_question_count(topic_id)}
+    elif language_mode == LanguageMode.BIOLOGY:
+        topic_id = request.get("topic_id")
+        if not topic_id:
+            raise HTTPException(status_code=400, detail="topic_id is required for biology")
+        return {"count": biology_repo.get_question_count(topic_id)}
     else:
         raise HTTPException(status_code=400, detail="Invalid language_mode")
 
@@ -1631,7 +1963,7 @@ async def start_quiz(config: QuizConfig):
         Direction.GREEK_TO_BULGARIAN, Direction.BULGARIAN_TO_GREEK,
         Direction.LATIN_TO_BULGARIAN, Direction.BULGARIAN_TO_LATIN, Direction.LATIN_MIXED,
         Direction.SPANISH_TO_BULGARIAN, Direction.BULGARIAN_TO_SPANISH, Direction.SPANISH_MIXED,
-        Direction.LITERATURE_QA
+        Direction.LITERATURE_QA, Direction.BIOLOGY_QA
     ]
     if config.direction not in valid_directions:
         raise HTTPException(status_code=400, detail="Invalid direction")
@@ -1716,6 +2048,84 @@ async def start_quiz(config: QuizConfig):
             word_pairs=word_pairs_dict,
         )
     
+    # ==================== Biology mode ====================
+    if config.language_mode == LanguageMode.BIOLOGY:
+        if config.direction != Direction.BIOLOGY_QA:
+            raise HTTPException(status_code=400, detail="Invalid direction for biology")
+
+        topic_id = config.topic_id
+
+        if config.word_pairs:
+            if not topic_id:
+                topic_id = config.word_pairs[0].get("topic_id")
+            if not topic_id:
+                raise HTTPException(status_code=400, detail="topic_id is required for biology")
+
+            question_ids = [wp.get("question_id") for wp in config.word_pairs if wp.get("question_id")]
+            if not question_ids:
+                raise HTTPException(status_code=400, detail="No question_id provided")
+
+            selected_questions = biology_repo.get_questions_by_ids(topic_id, question_ids)
+            if config.random_order:
+                random.shuffle(selected_questions)
+        else:
+            if not topic_id:
+                raise HTTPException(status_code=400, detail="topic_id is required for biology")
+
+            available_questions = biology_repo.get_questions(topic_id)
+
+            if config.exclude_correct_words:
+                exclude_ids = {
+                    wp.get("question_id")
+                    for wp in config.exclude_correct_words
+                    if wp.get("question_id")
+                }
+                available_questions = [q for q in available_questions if q.id not in exclude_ids]
+
+            if len(available_questions) == 0:
+                available_questions = biology_repo.get_questions(topic_id)
+                print(f"[{get_timestamp()}] [INFO] All biology questions mastered! Restarting with full set: {len(available_questions)}")
+
+            if config.use_all_words:
+                selected_questions = list(available_questions)
+            else:
+                count = min(config.count, len(available_questions))
+                if config.random_order:
+                    selected_questions = random.sample(available_questions, count)
+                else:
+                    selected_questions = available_questions[:count]
+
+        session = session_manager.create_literature_session(
+            topic_id=topic_id,
+            questions=selected_questions,
+            direction=config.direction,
+            time_per_question=config.time_per_question,
+            grader=biology_grader,
+        )
+
+        print(f"\n[{get_timestamp()}] [DEBUG] Biology Quiz Started:")
+        print(f"[{get_timestamp()}]   Session ID: {session.session_id}")
+        print(f"[{get_timestamp()}]   Topic: {topic_id}")
+        print(f"[{get_timestamp()}]   Questions: {len(selected_questions)}")
+        print(f"[{get_timestamp()}]   Time per Question: {config.time_per_question}s\n")
+
+        session.start_question(0)
+
+        questions_payload = [session.get_question(i) for i in range(len(selected_questions))]
+        word_pairs_dict = [
+            {"topic_id": topic_id, "question_id": q.id}
+            for q in selected_questions
+        ]
+
+        return QuizStartResponse(
+            session_id=session.session_id,
+            total_questions=len(selected_questions),
+            direction=config.direction,
+            time_per_question=config.time_per_question,
+            questions=questions_payload,
+            word_pairs=word_pairs_dict,
+        )
+
     # Get word pairs - either from config (reusing) or randomly selected
     if config.word_pairs:
         # Reuse specific word pairs (for exam after training)
@@ -2176,6 +2586,167 @@ async def delete_quiz(session_id: str):
     """Delete a quiz session"""
     session_manager.delete_session(session_id)
     return {"message": "Session deleted"}
+
+
+# ==================== Biology Cross-Exam Endpoints ====================
+
+class CrossExamStartRequest(BaseModel):
+    topic_id: str
+    count: int = Field(default=10, ge=3, le=30)
+
+
+class CrossExamAnswerRequest(BaseModel):
+    question_index: int
+    answer: str
+
+
+class CrossExamRetakeRequest(BaseModel):
+    session_id: str
+    failed_only: bool = False
+
+
+class CrossExamResumeRequest(BaseModel):
+    """Start a new session reusing a saved question list (client-persisted, e.g. from localStorage)."""
+    topic_id: str
+    questions: List[str]
+
+
+@app.post("/api/biology/cross-exam/start")
+async def start_cross_exam(req: CrossExamStartRequest):
+    """Generate fresh cross-exam questions from the lesson's source markdown and start a session."""
+    topic = biology_repo.get_topic(req.topic_id)
+    if not topic.source:
+        raise HTTPException(status_code=400, detail=f"Topic '{req.topic_id}' has no source file configured")
+
+    source_content = cross_exam_generator.load_source(topic.source)
+    questions = cross_exam_generator.generate_questions(source_content, req.count)
+
+    session_id = str(uuid4())
+    session = CrossExamSession(
+        session_id=session_id,
+        topic_id=req.topic_id,
+        questions=questions,
+        source_content=source_content,
+    )
+    cross_exam_sessions[session_id] = session
+
+    print(f"[{get_timestamp()}] 🔬 Cross-exam started: session={session_id} topic={req.topic_id} questions={len(questions)}")
+    return {
+        "session_id": session_id,
+        "topic_id": req.topic_id,
+        "questions": questions,
+        "total_questions": len(questions),
+    }
+
+
+@app.post("/api/biology/cross-exam/{session_id}/answer")
+async def answer_cross_exam(session_id: str, req: CrossExamAnswerRequest):
+    """Submit and evaluate one answer. Returns score and feedback."""
+    session = cross_exam_sessions.get(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail=f"Cross-exam session not found: {session_id}")
+
+    idx = req.question_index
+    if idx < 0 or idx >= len(session.questions):
+        raise HTTPException(status_code=400, detail=f"question_index {idx} out of range (0–{len(session.questions)-1})")
+
+    question = session.questions[idx]
+    score, notes = cross_exam_generator.evaluate_answer(session.source_content, question, req.answer)
+    session.record_answer(idx, req.answer, score, notes)
+
+    print(f"[{get_timestamp()}] 🔬 Cross-exam answer: session={session_id} q={idx} score={score}%")
+    return {
+        "question_index": idx,
+        "question": question,
+        "score_percent": score,
+        "notes": notes,
+        "passed": score >= CROSS_EXAM_MASTERED_THRESHOLD,
+        "total_answered": session.total_answered,
+    }
+
+
+@app.get("/api/biology/cross-exam/{session_id}/summary")
+async def get_cross_exam_summary(session_id: str):
+    """Return the full summary for a cross-exam session."""
+    session = cross_exam_sessions.get(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail=f"Cross-exam session not found: {session_id}")
+    return session.get_summary()
+
+
+@app.post("/api/biology/cross-exam/retake")
+async def retake_cross_exam(req: CrossExamRetakeRequest):
+    """Create a new session reusing the same questions (or just failed ones) from a previous session."""
+    original = cross_exam_sessions.get(req.session_id)
+    if not original:
+        raise HTTPException(status_code=404, detail=f"Original cross-exam session not found: {req.session_id}")
+
+    if req.failed_only:
+        failed_indices = [
+            i for i, a in enumerate(original.answers)
+            if a is not None and (original.scores[i] or 0) < CROSS_EXAM_MASTERED_THRESHOLD
+        ]
+        if not failed_indices:
+            raise HTTPException(status_code=400, detail="No failed questions to retake — all answers passed!")
+        questions = [original.questions[i] for i in failed_indices]
+    else:
+        questions = list(original.questions)
+
+    session_id = str(uuid4())
+    session = CrossExamSession(
+        session_id=session_id,
+        topic_id=original.topic_id,
+        questions=questions,
+        source_content=original.source_content,
+    )
+    cross_exam_sessions[session_id] = session
+
+    print(f"[{get_timestamp()}] 🔬 Cross-exam retake: session={session_id} from={req.session_id} failed_only={req.failed_only} questions={len(questions)}")
+    return {
+        "session_id": session_id,
+        "topic_id": session.topic_id,
+        "questions": questions,
+        "total_questions": len(questions),
+    }
+
+
+@app.post("/api/biology/cross-exam/resume")
+async def resume_cross_exam(req: CrossExamResumeRequest):
+    """Create a new session from a client-saved question list (e.g. restored from localStorage after a page refresh)."""
+    topic = biology_repo.get_topic(req.topic_id)
+    if not topic.source:
+        raise HTTPException(status_code=400, detail=f"Topic '{req.topic_id}' has no source file configured")
+
+    questions = [q.strip() for q in req.questions if q.strip()]
+    if not questions:
+        raise HTTPException(status_code=400, detail="No questions provided")
+
+    source_content = cross_exam_generator.load_source(topic.source)
+
+    session_id = str(uuid4())
+    session = CrossExamSession(
+        session_id=session_id,
+        topic_id=req.topic_id,
+        questions=questions,
+        source_content=source_content,
+    )
+    cross_exam_sessions[session_id] = session
+
+    print(f"[{get_timestamp()}] 🔬 Cross-exam resume: session={session_id} topic={req.topic_id} questions={len(questions)}")
+    return {
+        "session_id": session_id,
+        "topic_id": req.topic_id,
+        "questions": questions,
+        "total_questions": len(questions),
+    }
+
+
+# ==================== Biology Study Guide Endpoint ====================
+
+@app.get("/api/biology/study-guide/{topic_id}")
+async def get_biology_study_guide(topic_id: str):
+    """Return the structured study guide for a biology topic."""
+    return biology_repo.get_study_guide(topic_id)
 
 
 # Serve static files and frontend

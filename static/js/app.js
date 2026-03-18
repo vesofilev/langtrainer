@@ -21,6 +21,12 @@ const state = {
     isVerseMode: false,          // Whether we're in verse translation mode
     verseConfig: null,           // Verse config from /api/verse-config
     verseLesson: null,           // Selected verse lesson number
+    // Cross-exam state
+    isCrossExam: false,
+    crossExamSessionId: null,
+    crossExamQuestions: [],
+    crossExamCurrentIndex: 0,
+    crossExamTopicId: null,
 };
 
 // API base URL
@@ -40,7 +46,7 @@ function getStorageKey() {
 function createWordKey(word1, word2, lesson) {
     // Literature progress is tracked by (topic_id, question_id) instead of free text.
     // We overload the params as: word1 = question_id, lesson = topic_id.
-    if (state.languageMode === 'literature') {
+    if (state.languageMode === 'literature' || state.languageMode === 'biology') {
         const topicId = String(lesson ?? 'no-topic');
         const questionId = String(word1 ?? 'no-question');
         return `${topicId}_${questionId}`;
@@ -128,7 +134,9 @@ function resetAllProgress() {
             ? 'Latin'
             : (state.languageMode === 'spanish'
                 ? 'Spanish'
-                : 'Literature'));
+                : (state.languageMode === 'biology'
+                    ? 'Biology'
+                    : 'Literature')));
     if (confirm(`Are you sure you want to reset ALL ${modeLabel} progress? This cannot be undone!`)) {
         localStorage.removeItem(getStorageKey());
         console.log(`Progress reset for ${state.languageMode}`);
@@ -481,6 +489,9 @@ async function switchLanguageMode() {
         } else if (state.languageMode === 'spanish') {
             title.textContent = '🇪🇸 Spanish Trainer';
             if (subtitle) subtitle.textContent = 'Test your vocabulary knowledge';
+        } else if (state.languageMode === 'biology') {
+            title.textContent = '🧬 Биология';
+            if (subtitle) subtitle.textContent = 'Прегледай урока и се тествай';
         } else {
             title.textContent = '📖 Литература';
             if (subtitle) subtitle.textContent = 'Отговори на въпроси и получи оценка';
@@ -514,13 +525,13 @@ async function switchLanguageMode() {
         const wordCountLabel = document.querySelector('label[for="wordCount"]');
         const timeLabel = document.querySelector('label[for="timePerQuestion"]');
         const sessionModeSelect = document.getElementById('sessionMode');
-        if (state.languageMode === 'literature') {
+        if (state.languageMode === 'literature' || state.languageMode === 'biology') {
             if (sessionModeLabel) sessionModeLabel.textContent = 'Режим:';
             if (directionLabel) directionLabel.textContent = 'Тип тест:';
             if (wordCountLabel) wordCountLabel.textContent = 'Брой въпроси:';
             if (timeLabel) timeLabel.textContent = 'Време за въпрос (секунди):';
             if (sessionModeSelect) {
-                sessionModeSelect.options[0].textContent = 'Тренировка + Изпит';
+                sessionModeSelect.options[0].textContent = state.languageMode === 'biology' ? 'Преговор + Изпит' : 'Тренировка + Изпит';
                 sessionModeSelect.options[1].textContent = 'Само изпит';
             }
             const answerInput = document.getElementById('answerInput');
@@ -566,7 +577,7 @@ async function switchLanguageMode() {
         const lessonsGroup = document.getElementById('lessonsGroup');
         const topicsGroup = document.getElementById('topicsGroup');
 
-        if (state.languageMode === 'literature') {
+        if (state.languageMode === 'literature' || state.languageMode === 'biology') {
             if (topicsGroup) topicsGroup.style.display = 'block';
             if (lessonsGroup) lessonsGroup.style.display = 'none';
             state.availableLessons = [];
@@ -618,6 +629,10 @@ async function switchLanguageMode() {
         // Update keyboard visibility
         updateKeyboardVisibility();
         
+        // Show/hide cross-exam panel (biology only)
+        const crossExamGroup = document.getElementById('crossExamGroup');
+        if (crossExamGroup) crossExamGroup.style.display = state.languageMode === 'biology' ? 'block' : 'none';
+
         // Load verse config for Latin mode and show/hide verse panel
         await updateVersePanel();
         
@@ -631,7 +646,7 @@ async function switchLanguageMode() {
 
 // Handle literature topic change
 async function onLiteratureTopicChange() {
-    if (state.languageMode !== 'literature') return;
+    if (state.languageMode !== 'literature' && state.languageMode !== 'biology') return;
     const topicSelect = document.getElementById('literatureTopic');
     if (!topicSelect) return;
 
@@ -663,6 +678,11 @@ async function onLiteratureTopicChange() {
 
     // Update progress display for this topic
     updateProgressDisplay();
+
+    // Show/hide saved cross-exam session for this topic
+    if (state.languageMode === 'biology') {
+        updateCrossExamLastSession(state.literatureTopicId);
+    }
 }
 
 // Render lessons selector
@@ -859,8 +879,8 @@ async function updateProgressDisplay() {
         }
     }
     
-    // Handle Literature mode (topics)
-    if (state.languageMode === 'literature') {
+    // Handle Literature / Biology mode (topics)
+    if (state.languageMode === 'literature' || state.languageMode === 'biology') {
         if (!state.literatureTopicId) {
             progressSummary.style.display = 'none';
             return;
@@ -1264,7 +1284,7 @@ async function startSession() {
     }
 
     // Validate topic selection for Literature mode
-    if (state.languageMode === 'literature' && !state.literatureTopicId) {
+    if ((state.languageMode === 'literature' || state.languageMode === 'biology') && !state.literatureTopicId) {
         alert('Моля, изберете тема');
         return;
     }
@@ -1281,7 +1301,7 @@ async function startSession() {
             body: JSON.stringify({
                 language_mode: state.languageMode,
                 direction: direction,
-                topic_id: state.languageMode === 'literature' ? state.literatureTopicId : undefined
+                topic_id: (state.languageMode === 'literature' || state.languageMode === 'biology') ? state.literatureTopicId : undefined
             })
         });
         const countData = await countResponse.json();
@@ -1325,7 +1345,7 @@ async function startSession() {
     // Get list of words already answered correctly for this direction
     const excludeWords = (state.config && state.config.has_lessons)
         ? getCorrectWordsForLessons(state.selectedLessons, direction)
-        : (state.languageMode === 'literature'
+        : ((state.languageMode === 'literature' || state.languageMode === 'biology')
             ? getCorrectLiteratureQuestions(state.literatureTopicId, direction)
             : (direction === 'latin_mixed' 
                 ? [...getCorrectWordsForDirection('latin_to_bulgarian'), ...getCorrectWordsForDirection('bulgarian_to_latin')]
@@ -1346,7 +1366,7 @@ async function startSession() {
             count,
             time_per_question: timePerQuestion,
             selected_lessons: (state.config && state.config.has_lessons) ? state.selectedLessons : [],
-            topic_id: state.languageMode === 'literature' ? state.literatureTopicId : null,
+            topic_id: (state.languageMode === 'literature' || state.languageMode === 'biology') ? state.literatureTopicId : null,
             use_all_words: useAllWords,
             exclude_correct_words: excludeWords,
             random_order: randomOrder
@@ -1405,9 +1425,14 @@ async function startSession() {
         state.config.direction = direction;
 
         if (sessionMode === 'training') {
-            state.mode = 'training';
-            showScreen('trainingScreen');
-            displayTrainingWord();
+            if (state.languageMode === 'biology') {
+                state.mode = 'study_guide';
+                await showStudyGuide();
+            } else {
+                state.mode = 'training';
+                showScreen('trainingScreen');
+                displayTrainingWord();
+            }
         } else {
             state.mode = 'exam';
             showScreen('quizScreen');
@@ -1632,7 +1657,7 @@ async function startQuizAfterTraining() {
                 word_pairs: state.wordPairs,  // Reuse the same words!
                 time_per_question: state.timePerQuestion,  // Keep same time limit
                 selected_lessons: (state.config && state.config.has_lessons) ? state.selectedLessons : [],
-                topic_id: state.languageMode === 'literature' ? state.literatureTopicId : null
+                topic_id: (state.languageMode === 'literature' || state.languageMode === 'biology') ? state.literatureTopicId : null
             })
         });
 
@@ -1684,7 +1709,7 @@ function displayQuestion() {
 
     document.getElementById('progressFill').style.width = progress + '%';
     document.getElementById('questionCounter').textContent = 
-        (state.languageMode === 'literature' || isVerse)
+        (state.languageMode === 'literature' || state.languageMode === 'biology' || isVerse)
             ? `Въпрос ${state.currentIndex + 1} от ${state.questions.length}`
             : `Question ${state.currentIndex + 1} of ${state.questions.length}`;
     document.getElementById('questionLabel').textContent = question.prompt_label;
@@ -1712,7 +1737,7 @@ function displayQuestion() {
         questionTextEl.innerHTML = question.prompt.split('\n').map(l =>
             `<div style="text-align: left; margin: 4px 0; font-style: italic;">${l}</div>`
         ).join('');
-    } else if (state.languageMode === 'literature' && Array.isArray(question.choices) && question.choices.length > 0) {
+    } else if ((state.languageMode === 'literature' || state.languageMode === 'biology') && Array.isArray(question.choices) && question.choices.length > 0) {
         const escapeHtml = (s) => String(s)
             .replace(/&/g, '&amp;')
             .replace(/</g, '&lt;')
@@ -1723,14 +1748,14 @@ function displayQuestion() {
         const choicesHtml = question.choices.map(c => {
             const key = escapeHtml(c.key);
             const text = escapeHtml(c.text);
-            return `<div style="text-align:left; margin: 6px 0; padding: 10px 12px; border: 1px solid #e0e0e0; border-radius: 10px; background: #fff; cursor: pointer;" data-choice-key="${key}">
-                <strong>${key})</strong> ${text}
+            return `<div style="text-align:left; margin: 6px 0; padding: 10px 12px; border: 1px solid #e0e0e0; border-radius: 10px; background: #fff; cursor: pointer; font-size: 0.9em;" data-choice-key="${key}">
+                <span style="font-weight:600; color:#888; margin-right:6px;">${key})</span>${text}
             </div>`;
         }).join('');
 
         questionTextEl.innerHTML = `
             <div style="margin-bottom: 14px;">${escapeHtml(question.prompt)}</div>
-            <div id="literatureChoices" style="margin-top: 10px;">${choicesHtml}</div>
+            <div id="literatureChoices" style="margin-top: 10px; font-size: 0.6em;">${choicesHtml}</div>
             <div style="margin-top: 10px; font-size: 12px; color:#666; text-align:left;">Избери опция или въведи буквата (А/Б/В/Г).</div>
         `;
 
@@ -2029,8 +2054,8 @@ async function showSummary() {
         const incorrectList = document.getElementById('incorrectList');
         let html = '';
 
-        // LLM-graded summary (literature or verse)
-        if (state.languageMode === 'literature' || state.isVerseMode) {
+        // LLM-graded summary (literature, biology, or verse)
+        if (state.languageMode === 'literature' || state.languageMode === 'biology' || state.isVerseMode) {
             const formatText = (text) => {
                 if (!text) return '';
                 if (state.isVerseMode && text.includes('\n')) {
@@ -2105,13 +2130,19 @@ async function showSummary() {
         // 2. Score is not 100%
         // 3. We have word pairs to reuse
         const retakeSection = document.getElementById('retakeSection');
-        if (state.wasTrainingSession && 
-            summary.score_percentage < 100 && 
+        if (state.wasTrainingSession &&
+            summary.score_percentage < 100 &&
             state.wordPairs.length > 0) {
             retakeSection.style.display = 'block';
         } else {
             retakeSection.style.display = 'none';
         }
+
+        // Hide cross-exam retake section for normal quizzes
+        const crossExamRetakeSection = document.getElementById('crossExamRetakeSection');
+        if (crossExamRetakeSection) crossExamRetakeSection.style.display = 'none';
+        const summaryNewQuizBtn = document.getElementById('summaryNewQuizBtn');
+        if (summaryNewQuizBtn) { summaryNewQuizBtn.style.display = 'block'; summaryNewQuizBtn.textContent = 'Start New Quiz'; }
 
         showScreen('summaryScreen');
     } catch (error) {
@@ -2139,7 +2170,7 @@ function saveQuizProgress(summary) {
     // state.answers[i].correct is true if fully correct, false if wrong
     // state.answers[i].partial_credit is true if accent/aspiration error
     state.wordPairs.forEach((wordPair, index) => {
-        const lesson = state.languageMode === 'literature' ? wordPair.topic_id : wordPair.lesson;
+        const lesson = (state.languageMode === 'literature' || state.languageMode === 'biology') ? wordPair.topic_id : wordPair.lesson;
         
         // For lesson-based modes, lesson is required
         if ((state.config && state.config.has_lessons) && !lesson) {
@@ -2167,7 +2198,7 @@ function saveQuizProgress(summary) {
         // - Verse: mastered if score_percent >= 70
         const LITERATURE_MASTERED_THRESHOLD = 85;
         const VERSE_MASTERED_THRESHOLD = 70;
-        const isLLMGraded = state.languageMode === 'literature' || state.isVerseMode;
+        const isLLMGraded = state.languageMode === 'literature' || state.languageMode === 'biology' || state.isVerseMode;
         const llmThreshold = state.isVerseMode ? VERSE_MASTERED_THRESHOLD : LITERATURE_MASTERED_THRESHOLD;
         const wasFullyCorrect = isLLMGraded
             ? (answerResult.score_percent !== undefined && answerResult.score_percent !== null && answerResult.score_percent >= llmThreshold && answerResult.timed_out !== true)
@@ -2181,7 +2212,7 @@ function saveQuizProgress(summary) {
                 : (state.languageMode === 'spanish'
                     ? wordPair.spanish
                     : wordPair.question_id));
-        const word2 = state.languageMode === 'literature' ? '' : wordPair.bulgarian;
+        const word2 = (state.languageMode === 'literature' || state.languageMode === 'biology') ? '' : wordPair.bulgarian;
         
         console.log(`[Save Progress] Word ${index}: ${word1} ↔ ${word2}, Lesson ${lesson || 'N/A'}`);
         console.log(`[Save Progress]   - correct: ${answerResult.correct}, partial_credit: ${answerResult.partial_credit}, wasFullyCorrect: ${wasFullyCorrect}`);
@@ -2207,7 +2238,7 @@ function saveQuizProgress(summary) {
         
         if (wasFullyCorrect) {
             // Mark as mastered
-            if (state.languageMode === 'literature') {
+            if (state.languageMode === 'literature' || state.languageMode === 'biology') {
                 progress.wordProgress[progressKey] = {
                     topic_id: wordPair.topic_id,
                     question_id: wordPair.question_id,
@@ -2271,6 +2302,10 @@ function restartQuiz() {
     state.mode = 'exam';
     state.wordPairs = [];  // Clear stored word pairs
     state.isVerseMode = false; // Reset verse mode
+    state.isCrossExam = false; // Reset cross-exam mode
+    state.crossExamSessionId = null;
+    state.crossExamQuestions = [];
+    state.crossExamCurrentIndex = 0;
     
     // Reset verse textarea / regular input visibility
     const autocompleteContainer = document.getElementById('answerInput')?.closest('.autocomplete-container');
@@ -2284,9 +2319,360 @@ function restartQuiz() {
     updateProgressDisplay();
 }
 
+// ==================== Biology Study Guide ====================
+
+async function showStudyGuide() {
+    const topicId = state.literatureTopicId;
+    try {
+        const resp = await fetch(`${API_BASE}/biology/study-guide/${encodeURIComponent(topicId)}`);
+        if (!resp.ok) throw new Error('Failed to load study guide');
+        const data = await resp.json();
+        displayStudyGuide(data);
+        showScreen('studyGuideScreen');
+    } catch (e) {
+        console.error('Failed to load study guide:', e);
+        alert('Не може да се зареди преговорът. Преминаване директно към изпита.');
+        state.mode = 'exam';
+        showScreen('quizScreen');
+        displayQuestion();
+    }
+}
+
+function displayStudyGuide(data) {
+    const titleEl = document.getElementById('studyGuideTitle');
+    if (titleEl) titleEl.textContent = data.title || '📚 Преговор';
+
+    const container = document.getElementById('studyGuideContent');
+    let html = '';
+
+    if (data.overview) {
+        html += `<div class="study-guide-overview">${data.overview}</div>`;
+    }
+
+    (data.sections || []).forEach(section => {
+        html += `<div class="study-guide-section">
+            <h3 class="study-guide-section-title">${section.title}</h3>
+            <p class="study-guide-summary">${section.summary}</p>`;
+
+        if (section.must_know && section.must_know.length) {
+            html += `<div class="study-guide-must-know"><strong>Задължително знай:</strong><ul>`;
+            section.must_know.forEach(item => { html += `<li>${item}</li>`; });
+            html += `</ul></div>`;
+        }
+
+        if (section.key_terms && section.key_terms.length) {
+            html += `<div class="study-guide-key-terms"><strong>Ключови понятия:</strong><dl>`;
+            section.key_terms.forEach(t => {
+                html += `<dt>${t.term}</dt><dd>${t.definition}</dd>`;
+            });
+            html += `</dl></div>`;
+        }
+
+        if (section.compare_points && section.compare_points.length) {
+            html += `<div class="study-guide-compare"><strong>Сравни:</strong><ul>`;
+            section.compare_points.forEach(p => { html += `<li>${p}</li>`; });
+            html += `</ul></div>`;
+        }
+
+        html += `</div>`;
+    });
+
+    if (data.final_recap && data.final_recap.must_remember) {
+        html += `<div class="study-guide-recap"><h3>📌 Запомни задължително:</h3><ul>`;
+        data.final_recap.must_remember.forEach(item => { html += `<li>${item}</li>`; });
+        html += `</ul></div>`;
+    }
+
+    container.innerHTML = html;
+}
+
+function startExamFromStudyGuide() {
+    state.mode = 'exam';
+    showScreen('quizScreen');
+    displayQuestion();
+}
+
+// ==================== Biology Cross-Exam ====================
+
+async function startCrossExam() {
+    const topicId = state.literatureTopicId;
+    if (!topicId) {
+        alert('Моля, избери тема.');
+        return;
+    }
+    const count = parseInt(document.getElementById('crossExamCount').value) || 10;
+    const btn = document.getElementById('startCrossExamBtn');
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ Генериране на въпроси…'; }
+
+    try {
+        const resp = await fetch(`${API_BASE}/biology/cross-exam/start`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ topic_id: topicId, count })
+        });
+        if (!resp.ok) {
+            const err = await resp.json();
+            throw new Error(err.detail || 'Failed to start cross-exam');
+        }
+        const data = await resp.json();
+
+        state.isCrossExam = true;
+        state.crossExamSessionId = data.session_id;
+        state.crossExamQuestions = data.questions;
+        state.crossExamCurrentIndex = 0;
+        state.crossExamTopicId = topicId;
+
+        showCrossExamQuestion();
+    } catch (e) {
+        alert('Грешка при стартиране на кръстосан изпит: ' + e.message);
+    } finally {
+        if (btn) { btn.disabled = false; btn.textContent = '🔬 Започни кръстосан изпит'; }
+    }
+}
+
+function showCrossExamQuestion() {
+    const idx = state.crossExamCurrentIndex;
+    const total = state.crossExamQuestions.length;
+
+    document.getElementById('crossExamCounter').textContent = `Въпрос ${idx + 1} от ${total}`;
+    document.getElementById('crossExamQuestion').textContent = state.crossExamQuestions[idx];
+    document.getElementById('crossExamAnswer').value = '';
+    document.getElementById('crossExamFeedback').style.display = 'none';
+    document.getElementById('crossExamAnswerArea').style.display = 'block';
+    document.getElementById('crossExamNextArea').style.display = 'none';
+
+    const nextBtn = document.getElementById('crossExamNextBtn');
+    if (nextBtn) {
+        nextBtn.textContent = idx + 1 < total ? 'Следващ въпрос →' : '📊 Виж резултатите';
+    }
+
+    showScreen('crossExamScreen');
+    document.getElementById('crossExamAnswer').focus();
+}
+
+async function submitCrossExamAnswer() {
+    const answer = document.getElementById('crossExamAnswer').value.trim();
+    if (!answer) {
+        alert('Моля, напиши отговор.');
+        return;
+    }
+
+    const idx = state.crossExamCurrentIndex;
+    const btn = document.querySelector('#crossExamAnswerArea .btn');
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ Оценяване…'; }
+
+    try {
+        const resp = await fetch(`${API_BASE}/biology/cross-exam/${state.crossExamSessionId}/answer`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ question_index: idx, answer })
+        });
+        if (!resp.ok) {
+            const err = await resp.json();
+            throw new Error(err.detail || 'Грешка при оценяване');
+        }
+        const result = await resp.json();
+
+        const scoreColor = result.score_percent >= 70 ? '#1b5e20' : result.score_percent >= 40 ? '#e65100' : '#b71c1c';
+        const scoreBg   = result.score_percent >= 70 ? '#e8f5e9' : result.score_percent >= 40 ? '#fff3e0' : '#ffebee';
+        const feedbackEl = document.getElementById('crossExamFeedback');
+        feedbackEl.style.cssText = `display:block; background:${scoreBg}; border:2px solid ${scoreColor}; border-radius:8px; padding:14px 16px;`;
+        feedbackEl.innerHTML = `
+            <div style="font-weight:700; color:${scoreColor}; font-size:1.1em; margin-bottom:6px;">
+                ${result.passed ? '✅' : '❌'} Оценка: ${result.score_percent}%
+            </div>
+            <div style="font-size:0.93em; line-height:1.5;">${result.notes || ''}</div>
+        `;
+
+        document.getElementById('crossExamAnswerArea').style.display = 'none';
+        document.getElementById('crossExamNextArea').style.display = 'block';
+    } catch (e) {
+        alert('Грешка: ' + e.message);
+    } finally {
+        if (btn) { btn.disabled = false; btn.textContent = 'Изпрати отговор'; }
+    }
+}
+
+function nextCrossExamQuestion() {
+    state.crossExamCurrentIndex++;
+    if (state.crossExamCurrentIndex >= state.crossExamQuestions.length) {
+        showCrossExamSummary();
+    } else {
+        showCrossExamQuestion();
+    }
+}
+
+async function showCrossExamSummary() {
+    try {
+        const resp = await fetch(`${API_BASE}/biology/cross-exam/${state.crossExamSessionId}/summary`);
+        if (!resp.ok) throw new Error('Failed to load summary');
+        const summary = await resp.json();
+
+        document.getElementById('scorePercentage').textContent = summary.average_score + '%';
+        document.getElementById('correctCount').textContent = `${summary.total_answered}/${summary.total_questions}`;
+
+        const incorrectList = document.getElementById('incorrectList');
+        let html = '<h3>Преглед на отговорите:</h3>';
+        summary.questions.forEach(q => {
+            const scoreColor = q.score_percent >= 70 ? '#1b5e20' : q.score_percent >= 40 ? '#e65100' : '#b71c1c';
+            html += `
+                <div class="incorrect-item" style="border-left:4px solid ${scoreColor};">
+                    <strong>${q.question}</strong>
+                    <br><small>Оценка: <strong style="color:${scoreColor};">${q.passed ? '✅' : '❌'} ${q.score_percent}%</strong></small>
+                    <br><small style="color:#856404;">Твоят отговор: ${q.answer || '(няма)'}</small>
+                    ${q.notes ? `<br><small style="color:#555;">Бележки: ${q.notes}</small>` : ''}
+                </div>
+            `;
+        });
+        incorrectList.innerHTML = html;
+
+        document.getElementById('retakeSection').style.display = 'none';
+        document.getElementById('crossExamRetakeSection').style.display = 'block';
+        const summaryBtn = document.getElementById('summaryNewQuizBtn');
+        if (summaryBtn) { summaryBtn.style.display = 'block'; summaryBtn.textContent = '← Обратно към менюто'; }
+
+        const retakeFailedBtn = document.getElementById('retakeFailedBtn');
+        if (retakeFailedBtn) {
+            const hasFailed = summary.failed_question_indices && summary.failed_question_indices.length > 0;
+            retakeFailedBtn.style.display = hasFailed ? '' : 'none';
+        }
+
+        // Persist to localStorage so retake survives page refresh
+        const savedData = {
+            topic_id: summary.topic_id,
+            questions: summary.questions.map(q => q.question),
+            failed_questions: summary.questions.filter(q => !q.passed).map(q => q.question),
+            average_score: summary.average_score,
+            total: summary.total_questions,
+            timestamp: new Date().toISOString(),
+        };
+        localStorage.setItem(`crossExamLastSession_${summary.topic_id}`, JSON.stringify(savedData));
+        updateCrossExamLastSession(summary.topic_id);
+
+        showScreen('summaryScreen');
+        window.scrollTo(0, 0);
+    } catch (e) {
+        alert('Не може да се зареди резюмето: ' + e.message);
+    }
+}
+
+function updateCrossExamLastSession(topicId) {
+    const container = document.getElementById('crossExamLastSession');
+    const infoEl = document.getElementById('crossExamLastSessionInfo');
+    const resumeFailedBtn = document.getElementById('resumeFailedBtn');
+    if (!container || !topicId) return;
+
+    const raw = localStorage.getItem(`crossExamLastSession_${topicId}`);
+    if (!raw) {
+        container.style.display = 'none';
+        return;
+    }
+
+    try {
+        const saved = JSON.parse(raw);
+        const date = new Date(saved.timestamp).toLocaleDateString('bg-BG');
+        infoEl.textContent = `Последен изпит: ${date} — ${saved.total} въпроса, средна оценка ${saved.average_score}%`;
+        container.style.display = 'block';
+        if (resumeFailedBtn) {
+            resumeFailedBtn.style.display =
+                saved.failed_questions && saved.failed_questions.length > 0 ? '' : 'none';
+        }
+    } catch (e) {
+        container.style.display = 'none';
+    }
+}
+
+async function resumeCrossExam(failedOnly) {
+    const topicId = state.literatureTopicId;
+    const raw = localStorage.getItem(`crossExamLastSession_${topicId}`);
+    if (!raw) return;
+    const saved = JSON.parse(raw);
+
+    const questions = failedOnly ? saved.failed_questions : saved.questions;
+    if (!questions || questions.length === 0) {
+        alert('Няма въпроси за повторение.');
+        return;
+    }
+
+    const btn = document.getElementById(failedOnly ? 'resumeFailedBtn' : 'resumeAllBtn');
+    if (btn) { btn.disabled = true; btn.textContent = '⏳…'; }
+
+    try {
+        const resp = await fetch(`${API_BASE}/biology/cross-exam/resume`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ topic_id: topicId, questions })
+        });
+        if (!resp.ok) {
+            const err = await resp.json();
+            throw new Error(err.detail || 'Failed to resume');
+        }
+        const data = await resp.json();
+
+        state.isCrossExam = true;
+        state.crossExamSessionId = data.session_id;
+        state.crossExamQuestions = data.questions;
+        state.crossExamCurrentIndex = 0;
+        state.crossExamTopicId = topicId;
+
+        showCrossExamQuestion();
+    } catch (e) {
+        alert('Грешка: ' + e.message);
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = failedOnly ? '⚠️ Повтори само грешните' : '🔄 Повтори всички въпроси';
+        }
+    }
+}
+
+async function retryCrossExam(failedOnly) {
+    try {
+        const resp = await fetch(`${API_BASE}/biology/cross-exam/retake`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ session_id: state.crossExamSessionId, failed_only: failedOnly })
+        });
+        if (!resp.ok) {
+            const err = await resp.json();
+            throw new Error(err.detail || 'Грешка при повторение');
+        }
+        const data = await resp.json();
+
+        state.crossExamSessionId = data.session_id;
+        state.crossExamQuestions = data.questions;
+        state.crossExamCurrentIndex = 0;
+
+        showCrossExamQuestion();
+    } catch (e) {
+        alert('Грешка: ' + e.message);
+    }
+}
+
+function startNewCrossExam() {
+    state.isCrossExam = false;
+    state.crossExamSessionId = null;
+    state.crossExamQuestions = [];
+    state.crossExamCurrentIndex = 0;
+
+    document.getElementById('retakeSection').style.display = 'none';
+    document.getElementById('crossExamRetakeSection').style.display = 'none';
+    document.getElementById('summaryNewQuizBtn').style.display = 'block';
+
+    showScreen('setupScreen');
+}
+
+function onCrossExamKeyDown(event) {
+    // Ctrl+Enter or Cmd+Enter submits the answer
+    if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+        event.preventDefault();
+        submitCrossExamAnswer();
+    }
+}
+
 // Show screen
 function showScreen(screenId) {
-    document.querySelectorAll('.setup-screen, .quiz-screen, .summary-screen, .training-screen')
+    document.querySelectorAll('.setup-screen, .quiz-screen, .summary-screen, .training-screen, .study-guide-screen, .cross-exam-screen')
         .forEach(screen => screen.classList.remove('active'));
     document.getElementById(screenId).classList.add('active');
 }
@@ -2302,7 +2688,7 @@ document.addEventListener('keypress', (e) => {
             return; // let the browser handle newline insertion
         }
 
-        const activeScreen = document.querySelector('.setup-screen.active, .quiz-screen.active, .training-screen.active');
+        const activeScreen = document.querySelector('.setup-screen.active, .quiz-screen.active, .training-screen.active, .study-guide-screen.active, .cross-exam-screen.active');
         if (activeScreen) {
             if (activeScreen.id === 'setupScreen') {
                 startSession();
@@ -2310,6 +2696,14 @@ document.addEventListener('keypress', (e) => {
                 document.getElementById('submitBtn').click();
             } else if (activeScreen.id === 'trainingScreen') {
                 nextTrainingWord();
+            } else if (activeScreen.id === 'studyGuideScreen') {
+                startExamFromStudyGuide();
+            } else if (activeScreen.id === 'crossExamScreen') {
+                // Enter on the next button if answer area is hidden; otherwise Ctrl+Enter submits
+                const nextArea = document.getElementById('crossExamNextArea');
+                if (nextArea && nextArea.style.display !== 'none') {
+                    nextCrossExamQuestion();
+                }
             }
         }
     }

@@ -22,6 +22,7 @@
             <option value="latin">🏟️ Latin</option>
             <option value="spanish">🇪🇸 Spanish</option>
             <option value="literature">📖 Literature</option>
+            <option value="biology">🧬 Biology</option>
         </select>
     </div>
 
@@ -106,6 +107,32 @@
 
             <button class="btn" id="startSessionBtn" onclick="startSession()">Start Session</button>
 
+            <!-- Cross-Exam Panel (shown only in biology mode) -->
+            <div id="crossExamGroup" style="display: none; margin-top: 18px; padding: 16px 18px; background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); border-radius: 8px; border: 2px solid #4caf50;">
+                <div style="font-weight: 600; margin-bottom: 10px; color: #1b5e20; font-size: 1.05em;">🔬 Кръстосан изпит</div>
+                <div style="font-size: 0.88em; color: #2e7d32; margin-bottom: 12px;">
+                    LLM генерира въпроси от урока и оценява отговорите ти в реално време.
+                </div>
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label for="crossExamCount" style="font-size: 0.9em;">Брой въпроси:</label>
+                    <input type="number" id="crossExamCount" min="3" max="30" value="10" step="1" style="width: 80px;">
+                </div>
+                <button class="btn" id="startCrossExamBtn" onclick="startCrossExam()" style="background: linear-gradient(135deg, #388e3c, #1b5e20);">
+                    🔬 Започни кръстосан изпит
+                </button>
+
+                <!-- Saved last session (restored from localStorage on page load) -->
+                <div id="crossExamLastSession" style="display: none; margin-top: 14px; padding-top: 14px; border-top: 1px solid #81c784;">
+                    <div id="crossExamLastSessionInfo" style="font-size: 0.85em; color: #1b5e20; margin-bottom: 10px;"></div>
+                    <button class="btn" id="resumeAllBtn" onclick="resumeCrossExam(false)" style="background: linear-gradient(135deg, #1565c0, #0d47a1); margin-bottom: 8px; width: 100%;">
+                        🔄 Повтори всички въпроси
+                    </button>
+                    <button class="btn" id="resumeFailedBtn" onclick="resumeCrossExam(true)" style="background: linear-gradient(135deg, #f57c00, #e65100); width: 100%;">
+                        ⚠️ Повтори само грешните
+                    </button>
+                </div>
+            </div>
+
             <!-- Verse Translation Button (shown only when verse-eligible lessons are selected) -->
             <div id="verseTranslationGroup" style="display: none; margin-top: 15px; padding: 15px; background: linear-gradient(135deg, #f5e6d3 0%, #e8d5c4 100%); border-radius: 8px; border: 2px solid #c4a882;">
                 <div style="font-weight: 600; margin-bottom: 10px; color: #5d4037;">📜 Превод на стихове</div>
@@ -139,6 +166,49 @@
                 <div id="verseInfo" style="font-size: 0.85em; color: #5d4037; margin-bottom: 10px;"></div>
                 <button class="btn" id="startVerseBtn" onclick="startVerseSession()" style="background: linear-gradient(135deg, #8d6e63, #5d4037);">
                     📜 Започни превод на стихове
+                </button>
+            </div>
+        </div>
+
+        <!-- Biology Study Guide Screen -->
+        <div class="study-guide-screen" id="studyGuideScreen">
+            <h2 id="studyGuideTitle" style="text-align: center; color: #2e7d32; margin-bottom: 20px;">📚 Преговор</h2>
+            <div id="studyGuideContent"></div>
+            <div style="text-align: center; margin-top: 30px; padding-bottom: 30px;">
+                <button class="btn" onclick="startExamFromStudyGuide()" style="background: linear-gradient(135deg, #2e7d32, #1b5e20);">
+                    Готов съм → Започни изпита
+                </button>
+            </div>
+        </div>
+
+        <!-- Cross-Exam Screen -->
+        <div class="cross-exam-screen" id="crossExamScreen">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+                <span id="crossExamCounter" style="font-size: 0.9em; color: #555;"></span>
+                <span id="crossExamTitle" style="font-weight: 700; color: #2e7d32; font-size: 1.05em;">🔬 Кръстосан изпит</span>
+            </div>
+
+            <div style="background: #f1f8e9; border-left: 4px solid #2e7d32; border-radius: 6px; padding: 18px 20px; margin-bottom: 20px;">
+                <div style="font-size: 0.8em; color: #558b2f; margin-bottom: 8px;">Въпрос:</div>
+                <div id="crossExamQuestion" style="font-size: 1.15em; font-weight: 600; color: #1b5e20; line-height: 1.55;"></div>
+            </div>
+
+            <div id="crossExamFeedback" style="display: none; margin-bottom: 18px; padding: 14px 16px; border-radius: 8px;"></div>
+
+            <div id="crossExamAnswerArea">
+                <textarea id="crossExamAnswer"
+                    rows="4"
+                    placeholder="Напиши отговора си тук…"
+                    style="width: 100%; box-sizing: border-box; padding: 12px; font-size: 1em; border: 2px solid #a5d6a7; border-radius: 8px; resize: vertical; font-family: inherit; outline: none;"
+                    onkeydown="onCrossExamKeyDown(event)"></textarea>
+                <button class="btn" onclick="submitCrossExamAnswer()" style="margin-top: 12px; background: linear-gradient(135deg, #388e3c, #1b5e20); width: 100%;">
+                    Изпрати отговор
+                </button>
+            </div>
+
+            <div id="crossExamNextArea" style="display: none; text-align: center; margin-top: 16px;">
+                <button class="btn" id="crossExamNextBtn" onclick="nextCrossExamQuestion()" style="background: linear-gradient(135deg, #2e7d32, #1b5e20);">
+                    Следващ въпрос →
                 </button>
             </div>
         </div>
@@ -302,6 +372,19 @@
                 </div>
             </div>
 
+            <!-- Cross-exam retake section (shown right after score so it's visible without scrolling) -->
+            <div id="crossExamRetakeSection" style="display: none; margin-bottom: 24px;">
+                <button class="btn" onclick="retryCrossExam(false)" style="background: linear-gradient(135deg, #388e3c, #1b5e20); margin-bottom: 10px; width: 100%;">
+                    🔄 Повтори всички въпроси
+                </button>
+                <button class="btn" id="retakeFailedBtn" onclick="retryCrossExam(true)" style="background: linear-gradient(135deg, #f57c00, #e65100); margin-bottom: 10px; width: 100%;">
+                    ⚠️ Повтори само грешните
+                </button>
+                <button class="btn" onclick="startNewCrossExam()" style="background: #888; width: 100%;">
+                    ✨ Нов изпит (нови въпроси)
+                </button>
+            </div>
+
             <div class="incorrect-list" id="incorrectList"></div>
 
             <div id="retakeSection" style="display: none;">
@@ -315,7 +398,7 @@
                 </button>
             </div>
 
-            <button class="btn" onclick="restartQuiz()">Start New Quiz</button>
+            <button class="btn" id="summaryNewQuizBtn" onclick="restartQuiz()">Start New Quiz</button>
         </div>
     </div>
 
@@ -376,7 +459,7 @@
     </div>
 
     <!-- JavaScript Files -->
-    <script src="/static/js/app.js?v=7"></script>
+    <script src="/static/js/app.js?v=10"></script>
     <script src="/static/js/greek-keyboard.js"></script>
 </body>
 </html>
