@@ -3,7 +3,9 @@
     "allow": [
       "Bash(conda env:*)",
       "Bash(python -m py_compile app.py)",
-      "Read(//Users/vfilev/**)"
+      "Read(//Users/vfilev/**)",
+      "Bash(python3 -c \":*)",
+      "Bash(pip3 install:*)"
     ]
   }
 }

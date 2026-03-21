@@ -2103,10 +2103,13 @@ async def start_quiz(config: QuizConfig):
             grader=biology_grader,
         )
 
+        ids_selected = [q.id for q in selected_questions]
         print(f"\n[{get_timestamp()}] [DEBUG] Biology Quiz Started:")
         print(f"[{get_timestamp()}]   Session ID: {session.session_id}")
         print(f"[{get_timestamp()}]   Topic: {topic_id}")
-        print(f"[{get_timestamp()}]   Questions: {len(selected_questions)}")
+        print(f"[{get_timestamp()}]   Questions: {len(selected_questions)} | IDs: {ids_selected}")
+        if len(ids_selected) != len(set(ids_selected)):
+            print(f"[{get_timestamp()}]   *** DUPLICATE QUESTION IDs DETECTED ***")
         print(f"[{get_timestamp()}]   Time per Question: {config.time_per_question}s\n")
 
         session.start_question(0)

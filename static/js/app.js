@@ -1416,6 +1416,13 @@ async function startSession() {
         state.wordPairs = data.word_pairs;  // Store word pairs for reuse
         state.timePerQuestion = data.time_per_question; // Get from server response
         state.currentIndex = 0;
+
+        if (state.languageMode === 'biology') {
+            const ids = data.questions.map(q => q.question_id);
+            const dupes = ids.filter((id, i) => ids.indexOf(id) !== i);
+            console.log('[Biology] Question IDs received:', ids);
+            if (dupes.length) console.warn('[Biology] DUPLICATE question IDs in response:', dupes);
+        }
         state.answers = [];
         state.trainingCompleted = false;
         state.wasTrainingSession = (sessionMode === 'training'); // Track if training was used
@@ -1833,7 +1840,9 @@ async function submitAnswer(isTimeout = false) {
     stopTimer();
 
     const isVerse = state.isVerseMode;
-    const isLLMGraded = state.languageMode === 'literature' || isVerse;
+    const currentQuestion = state.questions[state.currentIndex];
+    const isBiologyOpenEnded = state.languageMode === 'biology' && currentQuestion?.question_type === 'open';
+    const isLLMGraded = state.languageMode === 'literature' || isBiologyOpenEnded || isVerse;
 
     // Get answer from the right input element
     let answer;
@@ -1932,7 +1941,9 @@ function displayFeedback(result, wasTimeout = false) {
     // Check timeout condition more carefully
     const isActualTimeout = (wasTimeout === true || result.timed_out === true);
     const isVerse = state.isVerseMode;
-    const isLLMGraded = state.languageMode === 'literature' || isVerse;
+    const currentQuestion = state.questions[state.currentIndex];
+    const isBiologyOpenEnded = state.languageMode === 'biology' && currentQuestion?.question_type === 'open';
+    const isLLMGraded = state.languageMode === 'literature' || isBiologyOpenEnded || isVerse;
 
     // Helper to format correct answer (may be multiline for verse)
     const formatAnswer = (text) => {
