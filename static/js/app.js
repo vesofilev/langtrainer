@@ -599,13 +599,13 @@ async function switchLanguageMode() {
                     topicSelect.appendChild(opt);
                 });
 
-                const savedTopic = localStorage.getItem('selectedLiteratureTopicId');
+                const savedTopic = localStorage.getItem(`selectedTopicId_${state.languageMode}`);
                 if (savedTopic && topics.some(t => t.topic_id === savedTopic)) {
                     topicSelect.value = savedTopic;
                 }
                 state.literatureTopicId = topicSelect.value || (topics[0]?.topic_id ?? null);
                 if (state.literatureTopicId) {
-                    localStorage.setItem('selectedLiteratureTopicId', state.literatureTopicId);
+                    localStorage.setItem(`selectedTopicId_${state.languageMode}`, state.literatureTopicId);
                 }
             }
 
@@ -651,13 +651,13 @@ async function switchLanguageMode() {
 
 // Handle literature topic change
 async function onLiteratureTopicChange() {
-    if (state.languageMode !== 'literature' && state.languageMode !== 'biology') return;
+    if (state.languageMode !== 'literature' && state.languageMode !== 'biology' && state.languageMode !== 'history') return;
     const topicSelect = document.getElementById('literatureTopic');
     if (!topicSelect) return;
 
     state.literatureTopicId = topicSelect.value || null;
     if (state.literatureTopicId) {
-        localStorage.setItem('selectedLiteratureTopicId', state.literatureTopicId);
+        localStorage.setItem(`selectedTopicId_${state.languageMode}`, state.literatureTopicId);
     }
 
     // Fetch question count for the selected topic
