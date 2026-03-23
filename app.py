@@ -46,6 +46,7 @@ class LanguageMode:
     SPANISH = "spanish"
     LITERATURE = "literature"
     BIOLOGY = "biology"
+    HISTORY = "history"
 
 
 class Direction:
@@ -59,6 +60,7 @@ class Direction:
     SPANISH_MIXED = "spanish_mixed"  # Combined es->bg and bg->es
     LITERATURE_QA = "literature_qa"
     BIOLOGY_QA = "biology_qa"
+    HISTORY_QA = "history_qa"
 
 
 class WordPair(BaseModel):
@@ -832,15 +834,25 @@ class LiteratureOpenAIGrader:
 
 
 class BiologyOpenAIGrader(LiteratureOpenAIGrader):
-    """Grades biology open-ended answers with a subject-specific prompt."""
+    """Grades open-ended answers with a subject-specific prompt."""
+
+    SUBJECT_PROMPTS = {
+        "biology": ("биология", "биологичните понятия, йерархии и процеси"),
+        "history": ("история", "историческите факти, дати, личности и причинно-следствени връзки"),
+    }
+
+    def __init__(self, model: str = "gpt-5.2", subject: str = "biology"):
+        super().__init__(model=model)
+        self.subject = subject
 
     def grade(self, *, question: str, reference_answer: str, student_answer: str) -> tuple[int, str]:
         client = self._client()
+        subject_label, subject_focus = self.SUBJECT_PROMPTS.get(self.subject, ("предмета", "ключовите понятия и факти"))
 
         system = (
-            "Ти си строг учител по биология (на български). "
+            f"Ти си строг учител по {subject_label} (на български). "
             "Оцени отговора на ученика спрямо ЕТАЛОННИЯ отговор. "
-            "Вземи предвид правилното разбиране на биологичните понятия, йерархии и процеси. "
+            f"Вземи предвид правилното разбиране на {subject_focus}. "
             "Върни само валиден JSON с ключове: score_percent (0-100 цяло число) и notes (кратки бележки на български: какво липсва/какво да се подобри). "
             "Не цитирай дълги пасажи; предпочитай пунктуални указания."
         )
@@ -972,12 +984,18 @@ class CrossExamGenerator:
             text = inner.strip()
         return text
 
-    def generate_questions(self, source_content: str, count: int) -> List[str]:
+    SUBJECT_LABELS = {
+        "biology": "биология",
+        "history": "история",
+    }
+
+    def generate_questions(self, source_content: str, count: int, subject: str = "biology") -> List[str]:
         """Ask the LLM to produce *count* exam questions for the given markdown lesson."""
         client = self._client()
+        subject_label = self.SUBJECT_LABELS.get(subject, subject)
 
         system = (
-            f"Ти си опитен учител по биология. Задачата ти е да съставиш точно {count} въпроса "
+            f"Ти си опитен учител по {subject_label}. Задачата ти е да съставиш точно {count} въпроса "
             "за устна проверка на знанията на ученик по дадения урок.\n"
             "Изисквания за въпросите:\n"
             "• Всеки въпрос проверява РАЗЛИЧЕН аспект от урока — без повторения.\n"
@@ -1018,18 +1036,23 @@ class CrossExamGenerator:
                 detail=f"Failed to parse generated questions: {exc}. Raw output: {text[:300]}"
             )
 
-    def evaluate_answer(self, source_content: str, question: str, student_answer: str) -> tuple[int, str]:
+    def evaluate_answer(self, source_content: str, question: str, student_answer: str, subject: str = "biology") -> tuple[int, str]:
         """Evaluate a student's answer against the lesson source. Returns (score_percent, notes)."""
         client = self._client()
+        subject_label = self.SUBJECT_LABELS.get(subject, subject)
+        terminology_label = {
+            "biology": "Биологична",
+            "history": "Историческа",
+        }.get(subject, "Предметна")
 
         system = (
-            "Ти си строг, но справедлив учител по биология. "
+            f"Ти си строг, но справедлив учител по {subject_label}. "
             "Оценяваш отговора на ученика ЕДИНСТВЕНО спрямо съдържанието на урока — "
             "той е твоят единствен еталон за истина.\n"
             "Критерии за оценка:\n"
             "• Фактическа точност спрямо урока.\n"
             "• Пълнота — покрива ли отговорът основните аспекти на въпроса.\n"
-            "• Биологична коректност на използваната терминология.\n"
+            f"• {terminology_label} коректност на използваната терминология.\n"
             "Бъди гъвкав с формулировките — перифразирането е напълно допустимо, "
             "стига съдържанието да е фактически вярно спрямо урока.\n"
             "Върни САМО валиден JSON с два ключа:\n"
@@ -1677,8 +1700,10 @@ app.add_middleware(
 word_repo = WordRepository()
 literature_repo = LiteratureRepository()
 biology_repo = BiologyRepository()
+history_repo = BiologyRepository(data_dir="data/history")
 literature_grader = LiteratureOpenAIGrader(model=os.getenv("LITERATURE_GRADING_MODEL", "gpt-5.2"))
-biology_grader = BiologyOpenAIGrader(model=os.getenv("BIOLOGY_GRADING_MODEL", os.getenv("LITERATURE_GRADING_MODEL", "gpt-5.2")))
+biology_grader = BiologyOpenAIGrader(model=os.getenv("BIOLOGY_GRADING_MODEL", os.getenv("LITERATURE_GRADING_MODEL", "gpt-5.2")), subject="biology")
+history_grader = BiologyOpenAIGrader(model=os.getenv("BIOLOGY_GRADING_MODEL", os.getenv("LITERATURE_GRADING_MODEL", "gpt-5.2")), subject="history")
 verse_grader = VerseTranslationGrader(model=os.getenv("VERSE_GRADING_MODEL", os.getenv("LITERATURE_GRADING_MODEL", "gpt-5.2")))
 cross_exam_generator = CrossExamGenerator(model=os.getenv("CROSS_EXAM_MODEL", os.getenv("BIOLOGY_GRADING_MODEL", os.getenv("LITERATURE_GRADING_MODEL", "gpt-5.2"))))
 cross_exam_sessions: Dict[str, CrossExamSession] = {}
@@ -1737,6 +1762,13 @@ async def get_config(language_mode: str = LanguageMode.GREEK):
             {"value": Direction.BIOLOGY_QA, "label": "Въпрос → Отговор"}
         ]
         has_lessons = False
+    elif language_mode == LanguageMode.HISTORY:
+        available_lessons = []
+        total_words = 0
+        directions = [
+            {"value": Direction.HISTORY_QA, "label": "Въпрос → Отговор"}
+        ]
+        has_lessons = False
     else:
         raise HTTPException(status_code=400, detail="Invalid language_mode")
     
@@ -1763,6 +1795,13 @@ async def get_config(language_mode: str = LanguageMode.GREEK):
 
     if language_mode == LanguageMode.BIOLOGY:
         topics = biology_repo.list_topics()
+        payload["topics"] = topics
+        payload["default_count"] = 10
+        payload["max_count"] = 200
+        payload["total_words"] = sum(t["question_count"] for t in topics)
+
+    if language_mode == LanguageMode.HISTORY:
+        topics = history_repo.list_topics()
         payload["topics"] = topics
         payload["default_count"] = 10
         payload["max_count"] = 200
@@ -1825,6 +1864,11 @@ async def get_words_count(request: Dict):
         if not topic_id:
             raise HTTPException(status_code=400, detail="topic_id is required for biology")
         return {"count": biology_repo.get_question_count(topic_id)}
+    elif language_mode == LanguageMode.HISTORY:
+        topic_id = request.get("topic_id")
+        if not topic_id:
+            raise HTTPException(status_code=400, detail="topic_id is required for history")
+        return {"count": history_repo.get_question_count(topic_id)}
     else:
         raise HTTPException(status_code=400, detail="Invalid language_mode")
 
@@ -1963,7 +2007,7 @@ async def start_quiz(config: QuizConfig):
         Direction.GREEK_TO_BULGARIAN, Direction.BULGARIAN_TO_GREEK,
         Direction.LATIN_TO_BULGARIAN, Direction.BULGARIAN_TO_LATIN, Direction.LATIN_MIXED,
         Direction.SPANISH_TO_BULGARIAN, Direction.BULGARIAN_TO_SPANISH, Direction.SPANISH_MIXED,
-        Direction.LITERATURE_QA, Direction.BIOLOGY_QA
+        Direction.LITERATURE_QA, Direction.BIOLOGY_QA, Direction.HISTORY_QA
     ]
     if config.direction not in valid_directions:
         raise HTTPException(status_code=400, detail="Invalid direction")
@@ -2111,6 +2155,84 @@ async def start_quiz(config: QuizConfig):
         if len(ids_selected) != len(set(ids_selected)):
             print(f"[{get_timestamp()}]   *** DUPLICATE QUESTION IDs DETECTED ***")
         print(f"[{get_timestamp()}]   Time per Question: {config.time_per_question}s\n")
+
+        session.start_question(0)
+
+        questions_payload = [session.get_question(i) for i in range(len(selected_questions))]
+        word_pairs_dict = [
+            {"topic_id": topic_id, "question_id": q.id}
+            for q in selected_questions
+        ]
+
+        return QuizStartResponse(
+            session_id=session.session_id,
+            total_questions=len(selected_questions),
+            direction=config.direction,
+            time_per_question=config.time_per_question,
+            questions=questions_payload,
+            word_pairs=word_pairs_dict,
+        )
+
+    # ==================== History mode ====================
+    if config.language_mode == LanguageMode.HISTORY:
+        if config.direction != Direction.HISTORY_QA:
+            raise HTTPException(status_code=400, detail="Invalid direction for history")
+
+        topic_id = config.topic_id
+
+        if config.word_pairs:
+            if not topic_id:
+                topic_id = config.word_pairs[0].get("topic_id")
+            if not topic_id:
+                raise HTTPException(status_code=400, detail="topic_id is required for history")
+
+            question_ids = [wp.get("question_id") for wp in config.word_pairs if wp.get("question_id")]
+            if not question_ids:
+                raise HTTPException(status_code=400, detail="No question_id provided")
+
+            selected_questions = history_repo.get_questions_by_ids(topic_id, question_ids)
+            if config.random_order:
+                random.shuffle(selected_questions)
+        else:
+            if not topic_id:
+                raise HTTPException(status_code=400, detail="topic_id is required for history")
+
+            available_questions = history_repo.get_questions(topic_id)
+
+            if config.exclude_correct_words:
+                exclude_ids = {
+                    wp.get("question_id")
+                    for wp in config.exclude_correct_words
+                    if wp.get("question_id")
+                }
+                available_questions = [q for q in available_questions if q.id not in exclude_ids]
+
+            if len(available_questions) == 0:
+                available_questions = history_repo.get_questions(topic_id)
+                print(f"[{get_timestamp()}] [INFO] All history questions mastered! Restarting with full set: {len(available_questions)}")
+
+            if config.use_all_words:
+                selected_questions = list(available_questions)
+            else:
+                count = min(config.count, len(available_questions))
+                if config.random_order:
+                    selected_questions = random.sample(available_questions, count)
+                else:
+                    selected_questions = available_questions[:count]
+
+        session = session_manager.create_literature_session(
+            topic_id=topic_id,
+            questions=selected_questions,
+            direction=config.direction,
+            time_per_question=config.time_per_question,
+            grader=history_grader,
+        )
+
+        ids_selected = [q.id for q in selected_questions]
+        print(f"\n[{get_timestamp()}] [DEBUG] History Quiz Started:")
+        print(f"[{get_timestamp()}]   Session ID: {session.session_id}")
+        print(f"[{get_timestamp()}]   Topic: {topic_id}")
+        print(f"[{get_timestamp()}]   Questions: {len(selected_questions)} | IDs: {ids_selected}")
 
         session.start_question(0)
 
@@ -2591,7 +2713,12 @@ async def delete_quiz(session_id: str):
     return {"message": "Session deleted"}
 
 
-# ==================== Biology Cross-Exam Endpoints ====================
+# ==================== Cross-Exam Endpoints (biology & history) ====================
+
+CROSS_EXAM_REPOS = {
+    "biology": lambda: biology_repo,
+    "history": lambda: history_repo,
+}
 
 class CrossExamStartRequest(BaseModel):
     topic_id: str
@@ -2614,15 +2741,23 @@ class CrossExamResumeRequest(BaseModel):
     questions: List[str]
 
 
-@app.post("/api/biology/cross-exam/start")
-async def start_cross_exam(req: CrossExamStartRequest):
+def _get_cross_exam_repo(subject: str):
+    factory = CROSS_EXAM_REPOS.get(subject)
+    if not factory:
+        raise HTTPException(status_code=400, detail=f"Cross-exam not supported for subject: {subject}")
+    return factory()
+
+
+@app.post("/api/{subject}/cross-exam/start")
+async def start_cross_exam(subject: str, req: CrossExamStartRequest):
     """Generate fresh cross-exam questions from the lesson's source markdown and start a session."""
-    topic = biology_repo.get_topic(req.topic_id)
+    repo = _get_cross_exam_repo(subject)
+    topic = repo.get_topic(req.topic_id)
     if not topic.source:
         raise HTTPException(status_code=400, detail=f"Topic '{req.topic_id}' has no source file configured")
 
     source_content = cross_exam_generator.load_source(topic.source)
-    questions = cross_exam_generator.generate_questions(source_content, req.count)
+    questions = cross_exam_generator.generate_questions(source_content, req.count, subject=subject)
 
     session_id = str(uuid4())
     session = CrossExamSession(
@@ -2633,7 +2768,7 @@ async def start_cross_exam(req: CrossExamStartRequest):
     )
     cross_exam_sessions[session_id] = session
 
-    print(f"[{get_timestamp()}] 🔬 Cross-exam started: session={session_id} topic={req.topic_id} questions={len(questions)}")
+    print(f"[{get_timestamp()}] 🔬 Cross-exam started: subject={subject} session={session_id} topic={req.topic_id} questions={len(questions)}")
     return {
         "session_id": session_id,
         "topic_id": req.topic_id,
@@ -2642,9 +2777,10 @@ async def start_cross_exam(req: CrossExamStartRequest):
     }
 
 
-@app.post("/api/biology/cross-exam/{session_id}/answer")
-async def answer_cross_exam(session_id: str, req: CrossExamAnswerRequest):
+@app.post("/api/{subject}/cross-exam/{session_id}/answer")
+async def answer_cross_exam(subject: str, session_id: str, req: CrossExamAnswerRequest):
     """Submit and evaluate one answer. Returns score and feedback."""
+    _get_cross_exam_repo(subject)  # validate subject
     session = cross_exam_sessions.get(session_id)
     if not session:
         raise HTTPException(status_code=404, detail=f"Cross-exam session not found: {session_id}")
@@ -2654,10 +2790,10 @@ async def answer_cross_exam(session_id: str, req: CrossExamAnswerRequest):
         raise HTTPException(status_code=400, detail=f"question_index {idx} out of range (0–{len(session.questions)-1})")
 
     question = session.questions[idx]
-    score, notes = cross_exam_generator.evaluate_answer(session.source_content, question, req.answer)
+    score, notes = cross_exam_generator.evaluate_answer(session.source_content, question, req.answer, subject=subject)
     session.record_answer(idx, req.answer, score, notes)
 
-    print(f"[{get_timestamp()}] 🔬 Cross-exam answer: session={session_id} q={idx} score={score}%")
+    print(f"[{get_timestamp()}] 🔬 Cross-exam answer: subject={subject} session={session_id} q={idx} score={score}%")
     return {
         "question_index": idx,
         "question": question,
@@ -2668,18 +2804,20 @@ async def answer_cross_exam(session_id: str, req: CrossExamAnswerRequest):
     }
 
 
-@app.get("/api/biology/cross-exam/{session_id}/summary")
-async def get_cross_exam_summary(session_id: str):
+@app.get("/api/{subject}/cross-exam/{session_id}/summary")
+async def get_cross_exam_summary(subject: str, session_id: str):
     """Return the full summary for a cross-exam session."""
+    _get_cross_exam_repo(subject)  # validate subject
     session = cross_exam_sessions.get(session_id)
     if not session:
         raise HTTPException(status_code=404, detail=f"Cross-exam session not found: {session_id}")
     return session.get_summary()
 
 
-@app.post("/api/biology/cross-exam/retake")
-async def retake_cross_exam(req: CrossExamRetakeRequest):
+@app.post("/api/{subject}/cross-exam/retake")
+async def retake_cross_exam(subject: str, req: CrossExamRetakeRequest):
     """Create a new session reusing the same questions (or just failed ones) from a previous session."""
+    _get_cross_exam_repo(subject)  # validate subject
     original = cross_exam_sessions.get(req.session_id)
     if not original:
         raise HTTPException(status_code=404, detail=f"Original cross-exam session not found: {req.session_id}")
@@ -2704,7 +2842,7 @@ async def retake_cross_exam(req: CrossExamRetakeRequest):
     )
     cross_exam_sessions[session_id] = session
 
-    print(f"[{get_timestamp()}] 🔬 Cross-exam retake: session={session_id} from={req.session_id} failed_only={req.failed_only} questions={len(questions)}")
+    print(f"[{get_timestamp()}] 🔬 Cross-exam retake: subject={subject} session={session_id} from={req.session_id} failed_only={req.failed_only} questions={len(questions)}")
     return {
         "session_id": session_id,
         "topic_id": session.topic_id,
@@ -2713,10 +2851,11 @@ async def retake_cross_exam(req: CrossExamRetakeRequest):
     }
 
 
-@app.post("/api/biology/cross-exam/resume")
-async def resume_cross_exam(req: CrossExamResumeRequest):
+@app.post("/api/{subject}/cross-exam/resume")
+async def resume_cross_exam(subject: str, req: CrossExamResumeRequest):
     """Create a new session from a client-saved question list (e.g. restored from localStorage after a page refresh)."""
-    topic = biology_repo.get_topic(req.topic_id)
+    repo = _get_cross_exam_repo(subject)
+    topic = repo.get_topic(req.topic_id)
     if not topic.source:
         raise HTTPException(status_code=400, detail=f"Topic '{req.topic_id}' has no source file configured")
 
@@ -2735,7 +2874,7 @@ async def resume_cross_exam(req: CrossExamResumeRequest):
     )
     cross_exam_sessions[session_id] = session
 
-    print(f"[{get_timestamp()}] 🔬 Cross-exam resume: session={session_id} topic={req.topic_id} questions={len(questions)}")
+    print(f"[{get_timestamp()}] 🔬 Cross-exam resume: subject={subject} session={session_id} topic={req.topic_id} questions={len(questions)}")
     return {
         "session_id": session_id,
         "topic_id": req.topic_id,

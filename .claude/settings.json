@@ -5,7 +5,12 @@
       "Bash(python -m py_compile app.py)",
       "Read(//Users/vfilev/**)",
       "Bash(python3 -c \":*)",
-      "Bash(pip3 install:*)"
+      "Bash(pip3 install:*)",
+      "Bash(python3 -c \"import json; data = json.load\\(open\\(''/Users/vfilev/serdica/LanguageTrainer/data/history/lesson_2_regime_of_powers.json''\\)\\); print\\(f''Valid JSON. Questions: {len\\(data[\"\"questions\"\"]\\)}''\\); keys = set\\(\\); [keys.add\\(q[''correct_choice'']\\) for q in data[''questions'']]; print\\(f''Correct answer distribution: { {k: sum\\(1 for q in data[\"\"questions\"\"] if q[\"\"correct_choice\"\"]==k\\) for k in sorted\\(keys\\)} }''\\)\")",
+      "Bash(python3 -c \"import json; data = json.load\\(open\\(''/Users/vfilev/serdica/LanguageTrainer/data/history/lesson_3_unification_war.json''\\)\\); print\\(f''Valid JSON. {len\\(data[\"\"questions\"\"]\\)} questions. Topic: {data[\"\"topic_id\"\"]}''\\)\")",
+      "Bash(python3 -c \"import json; data = json.load\\(open\\(''/Users/vfilev/serdica/LanguageTrainer/data/history/lesson_5_stambolov.json''\\)\\); print\\(f''Valid JSON. {len\\(data[\"\"questions\"\"]\\)} questions found.''\\); keys = set\\(\\); [keys.add\\(q[''correct_choice'']\\) for q in data[''questions'']]; print\\(f''Correct choices distribution: {dict\\(\\(k, sum\\(1 for q in data[\"\"questions\"\"] if q[\"\"correct_choice\"\"]==k\\)\\) for k in sorted\\(keys\\)\\)}''\\)\")",
+      "Bash(python3 -c \"import json; data = json.load\\(open\\(''/Users/vfilev/serdica/LanguageTrainer/data/history/lesson_4_bulgarian_crisis.json''\\)\\); print\\(f''Valid JSON. {len\\(data[\"\"questions\"\"]\\)} questions found.''\\); keys = [q[''correct_choice''] for q in data[''questions'']]; print\\(f''Correct answer distribution: '' + '', ''.join\\(f\"\"{k}={keys.count\\(k\\)}\"\" for k in [''А'',''Б'',''В'',''Г'']\\)\\)\")",
+      "Bash(python3:*)"
     ]
   }
 }
