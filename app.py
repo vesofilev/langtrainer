@@ -47,6 +47,7 @@ class LanguageMode:
     LITERATURE = "literature"
     BIOLOGY = "biology"
     HISTORY = "history"
+    GEOGRAPHY = "geography"
 
 
 class Direction:
@@ -61,6 +62,7 @@ class Direction:
     LITERATURE_QA = "literature_qa"
     BIOLOGY_QA = "biology_qa"
     HISTORY_QA = "history_qa"
+    GEOGRAPHY_QA = "geography_qa"
 
 
 class WordPair(BaseModel):
@@ -632,6 +634,7 @@ class LiteratureQuestion(BaseModel):
     reference_answer: str
     choices: Optional[List[LiteratureChoice]] = None
     correct_choice: Optional[str] = None
+    image: Optional[str] = None
 
 
 class LiteratureTopic(BaseModel):
@@ -839,6 +842,7 @@ class BiologyOpenAIGrader(LiteratureOpenAIGrader):
     SUBJECT_PROMPTS = {
         "biology": ("биология", "биологичните понятия, йерархии и процеси"),
         "history": ("история", "историческите факти, дати, личности и причинно-следствени връзки"),
+        "geography": ("география", "географските понятия, карти, климат и население"),
     }
 
     def __init__(self, model: str = "gpt-5.2", subject: str = "biology"):
@@ -987,6 +991,7 @@ class CrossExamGenerator:
     SUBJECT_LABELS = {
         "biology": "биология",
         "history": "история",
+        "geography": "география",
     }
 
     def generate_questions(self, source_content: str, count: int, subject: str = "biology") -> List[str]:
@@ -1131,6 +1136,9 @@ class LiteratureSession:
             payload["choices"] = [c.model_dump() for c in q.choices]
         else:
             payload["question_type"] = "open"
+
+        if q.image:
+            payload["image"] = f"/{q.image}" if not q.image.startswith("/") else q.image
 
         return payload
 
@@ -1701,9 +1709,11 @@ word_repo = WordRepository()
 literature_repo = LiteratureRepository()
 biology_repo = BiologyRepository()
 history_repo = BiologyRepository(data_dir="data/history")
+geography_repo = BiologyRepository(data_dir="data/geography")
 literature_grader = LiteratureOpenAIGrader(model=os.getenv("LITERATURE_GRADING_MODEL", "gpt-5.2"))
 biology_grader = BiologyOpenAIGrader(model=os.getenv("BIOLOGY_GRADING_MODEL", os.getenv("LITERATURE_GRADING_MODEL", "gpt-5.2")), subject="biology")
 history_grader = BiologyOpenAIGrader(model=os.getenv("BIOLOGY_GRADING_MODEL", os.getenv("LITERATURE_GRADING_MODEL", "gpt-5.2")), subject="history")
+geography_grader = BiologyOpenAIGrader(model=os.getenv("BIOLOGY_GRADING_MODEL", os.getenv("LITERATURE_GRADING_MODEL", "gpt-5.2")), subject="geography")
 verse_grader = VerseTranslationGrader(model=os.getenv("VERSE_GRADING_MODEL", os.getenv("LITERATURE_GRADING_MODEL", "gpt-5.2")))
 cross_exam_generator = CrossExamGenerator(model=os.getenv("CROSS_EXAM_MODEL", os.getenv("BIOLOGY_GRADING_MODEL", os.getenv("LITERATURE_GRADING_MODEL", "gpt-5.2"))))
 cross_exam_sessions: Dict[str, CrossExamSession] = {}
@@ -1769,6 +1779,13 @@ async def get_config(language_mode: str = LanguageMode.GREEK):
             {"value": Direction.HISTORY_QA, "label": "Въпрос → Отговор"}
         ]
         has_lessons = False
+    elif language_mode == LanguageMode.GEOGRAPHY:
+        available_lessons = []
+        total_words = 0
+        directions = [
+            {"value": Direction.GEOGRAPHY_QA, "label": "Въпрос → Отговор"}
+        ]
+        has_lessons = False
     else:
         raise HTTPException(status_code=400, detail="Invalid language_mode")
     
@@ -1802,6 +1819,13 @@ async def get_config(language_mode: str = LanguageMode.GREEK):
 
     if language_mode == LanguageMode.HISTORY:
         topics = history_repo.list_topics()
+        payload["topics"] = topics
+        payload["default_count"] = 10
+        payload["max_count"] = 200
+        payload["total_words"] = sum(t["question_count"] for t in topics)
+
+    if language_mode == LanguageMode.GEOGRAPHY:
+        topics = geography_repo.list_topics()
         payload["topics"] = topics
         payload["default_count"] = 10
         payload["max_count"] = 200
@@ -1869,6 +1893,11 @@ async def get_words_count(request: Dict):
         if not topic_id:
             raise HTTPException(status_code=400, detail="topic_id is required for history")
         return {"count": history_repo.get_question_count(topic_id)}
+    elif language_mode == LanguageMode.GEOGRAPHY:
+        topic_id = request.get("topic_id")
+        if not topic_id:
+            raise HTTPException(status_code=400, detail="topic_id is required for geography")
+        return {"count": geography_repo.get_question_count(topic_id)}
     else:
         raise HTTPException(status_code=400, detail="Invalid language_mode")
 
@@ -2007,7 +2036,7 @@ async def start_quiz(config: QuizConfig):
         Direction.GREEK_TO_BULGARIAN, Direction.BULGARIAN_TO_GREEK,
         Direction.LATIN_TO_BULGARIAN, Direction.BULGARIAN_TO_LATIN, Direction.LATIN_MIXED,
         Direction.SPANISH_TO_BULGARIAN, Direction.BULGARIAN_TO_SPANISH, Direction.SPANISH_MIXED,
-        Direction.LITERATURE_QA, Direction.BIOLOGY_QA, Direction.HISTORY_QA
+        Direction.LITERATURE_QA, Direction.BIOLOGY_QA, Direction.HISTORY_QA, Direction.GEOGRAPHY_QA
     ]
     if config.direction not in valid_directions:
         raise HTTPException(status_code=400, detail="Invalid direction")
@@ -2230,6 +2259,84 @@ async def start_quiz(config: QuizConfig):
 
         ids_selected = [q.id for q in selected_questions]
         print(f"\n[{get_timestamp()}] [DEBUG] History Quiz Started:")
+        print(f"[{get_timestamp()}]   Session ID: {session.session_id}")
+        print(f"[{get_timestamp()}]   Topic: {topic_id}")
+        print(f"[{get_timestamp()}]   Questions: {len(selected_questions)} | IDs: {ids_selected}")
+
+        session.start_question(0)
+
+        questions_payload = [session.get_question(i) for i in range(len(selected_questions))]
+        word_pairs_dict = [
+            {"topic_id": topic_id, "question_id": q.id}
+            for q in selected_questions
+        ]
+
+        return QuizStartResponse(
+            session_id=session.session_id,
+            total_questions=len(selected_questions),
+            direction=config.direction,
+            time_per_question=config.time_per_question,
+            questions=questions_payload,
+            word_pairs=word_pairs_dict,
+        )
+
+    # ==================== Geography mode ====================
+    if config.language_mode == LanguageMode.GEOGRAPHY:
+        if config.direction != Direction.GEOGRAPHY_QA:
+            raise HTTPException(status_code=400, detail="Invalid direction for geography")
+
+        topic_id = config.topic_id
+
+        if config.word_pairs:
+            if not topic_id:
+                topic_id = config.word_pairs[0].get("topic_id")
+            if not topic_id:
+                raise HTTPException(status_code=400, detail="topic_id is required for geography")
+
+            question_ids = [wp.get("question_id") for wp in config.word_pairs if wp.get("question_id")]
+            if not question_ids:
+                raise HTTPException(status_code=400, detail="No question_id provided")
+
+            selected_questions = geography_repo.get_questions_by_ids(topic_id, question_ids)
+            if config.random_order:
+                random.shuffle(selected_questions)
+        else:
+            if not topic_id:
+                raise HTTPException(status_code=400, detail="topic_id is required for geography")
+
+            available_questions = geography_repo.get_questions(topic_id)
+
+            if config.exclude_correct_words:
+                exclude_ids = {
+                    wp.get("question_id")
+                    for wp in config.exclude_correct_words
+                    if wp.get("question_id")
+                }
+                available_questions = [q for q in available_questions if q.id not in exclude_ids]
+
+            if len(available_questions) == 0:
+                available_questions = geography_repo.get_questions(topic_id)
+                print(f"[{get_timestamp()}] [INFO] All geography questions mastered! Restarting with full set: {len(available_questions)}")
+
+            if config.use_all_words:
+                selected_questions = list(available_questions)
+            else:
+                count = min(config.count, len(available_questions))
+                if config.random_order:
+                    selected_questions = random.sample(available_questions, count)
+                else:
+                    selected_questions = available_questions[:count]
+
+        session = session_manager.create_literature_session(
+            topic_id=topic_id,
+            questions=selected_questions,
+            direction=config.direction,
+            time_per_question=config.time_per_question,
+            grader=geography_grader,
+        )
+
+        ids_selected = [q.id for q in selected_questions]
+        print(f"\n[{get_timestamp()}] [DEBUG] Geography Quiz Started:")
         print(f"[{get_timestamp()}]   Session ID: {session.session_id}")
         print(f"[{get_timestamp()}]   Topic: {topic_id}")
         print(f"[{get_timestamp()}]   Questions: {len(selected_questions)} | IDs: {ids_selected}")
@@ -2718,6 +2825,7 @@ async def delete_quiz(session_id: str):
 CROSS_EXAM_REPOS = {
     "biology": lambda: biology_repo,
     "history": lambda: history_repo,
+    "geography": lambda: geography_repo,
 }
 
 class CrossExamStartRequest(BaseModel):
@@ -2892,6 +3000,7 @@ async def get_biology_study_guide(topic_id: str):
 
 
 # Serve static files and frontend
+app.mount("/data", StaticFiles(directory="data"), name="data")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
