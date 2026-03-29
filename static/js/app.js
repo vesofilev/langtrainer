@@ -46,7 +46,7 @@ function getStorageKey() {
 function createWordKey(word1, word2, lesson) {
     // Literature progress is tracked by (topic_id, question_id) instead of free text.
     // We overload the params as: word1 = question_id, lesson = topic_id.
-    if (state.languageMode === 'literature' || state.languageMode === 'biology' || state.languageMode === 'history' || state.languageMode === 'geography') {
+    if (state.languageMode === 'literature' || state.languageMode === 'biology' || state.languageMode === 'history' || state.languageMode === 'geography' || state.languageMode === 'chemistry' || state.languageMode === 'chemistry') {
         const topicId = String(lesson ?? 'no-topic');
         const questionId = String(word1 ?? 'no-question');
         return `${topicId}_${questionId}`;
@@ -140,7 +140,9 @@ function resetAllProgress() {
                         ? 'History'
                         : (state.languageMode === 'geography'
                             ? 'Geography'
-                            : 'Literature')))));
+                            : (state.languageMode === 'chemistry'
+                                ? 'Chemistry'
+                                : 'Literature'))))));
     if (confirm(`Are you sure you want to reset ALL ${modeLabel} progress? This cannot be undone!`)) {
         localStorage.removeItem(getStorageKey());
         console.log(`Progress reset for ${state.languageMode}`);
@@ -502,6 +504,9 @@ async function switchLanguageMode() {
         } else if (state.languageMode === 'geography') {
             title.textContent = '🌍 География';
             if (subtitle) subtitle.textContent = 'Прегледай урока и се тествай';
+        } else if (state.languageMode === 'chemistry') {
+            title.textContent = '🧪 Химия';
+            if (subtitle) subtitle.textContent = 'Прегледай урока и се тествай';
         } else {
             title.textContent = '📖 Литература';
             if (subtitle) subtitle.textContent = 'Отговори на въпроси и получи оценка';
@@ -540,13 +545,13 @@ async function switchLanguageMode() {
         const wordCountLabel = document.querySelector('label[for="wordCount"]');
         const timeLabel = document.querySelector('label[for="timePerQuestion"]');
         const sessionModeSelect = document.getElementById('sessionMode');
-        if (state.languageMode === 'literature' || state.languageMode === 'biology' || state.languageMode === 'history' || state.languageMode === 'geography') {
+        if (state.languageMode === 'literature' || state.languageMode === 'biology' || state.languageMode === 'history' || state.languageMode === 'geography' || state.languageMode === 'chemistry' || state.languageMode === 'chemistry') {
             if (sessionModeLabel) sessionModeLabel.textContent = 'Режим:';
             if (directionLabel) directionLabel.textContent = 'Тип тест:';
             if (wordCountLabel) wordCountLabel.textContent = 'Брой въпроси:';
             if (timeLabel) timeLabel.textContent = 'Време за въпрос (секунди):';
             if (sessionModeSelect) {
-                sessionModeSelect.options[0].textContent = (state.languageMode === 'biology' || state.languageMode === 'history' || state.languageMode === 'geography') ? 'Преговор + Изпит' : 'Тренировка + Изпит';
+                sessionModeSelect.options[0].textContent = (state.languageMode === 'biology' || state.languageMode === 'history' || state.languageMode === 'geography' || state.languageMode === 'chemistry') ? 'Преговор + Изпит' : 'Тренировка + Изпит';
                 sessionModeSelect.options[1].textContent = 'Само изпит';
             }
             const answerInput = document.getElementById('answerInput');
@@ -592,7 +597,7 @@ async function switchLanguageMode() {
         const lessonsGroup = document.getElementById('lessonsGroup');
         const topicsGroup = document.getElementById('topicsGroup');
 
-        if (state.languageMode === 'literature' || state.languageMode === 'biology' || state.languageMode === 'history' || state.languageMode === 'geography') {
+        if (state.languageMode === 'literature' || state.languageMode === 'biology' || state.languageMode === 'history' || state.languageMode === 'geography' || state.languageMode === 'chemistry' || state.languageMode === 'chemistry') {
             if (topicsGroup) topicsGroup.style.display = 'block';
             if (lessonsGroup) lessonsGroup.style.display = 'none';
             state.availableLessons = [];
@@ -643,10 +648,11 @@ async function switchLanguageMode() {
         
         // Update keyboard visibility
         updateKeyboardVisibility();
+        updateChemKeyboardVisibility();
         
         // Show/hide cross-exam panel (biology and history)
         const crossExamGroup = document.getElementById('crossExamGroup');
-        if (crossExamGroup) crossExamGroup.style.display = (state.languageMode === 'biology' || state.languageMode === 'history' || state.languageMode === 'geography') ? 'block' : 'none';
+        if (crossExamGroup) crossExamGroup.style.display = (state.languageMode === 'biology' || state.languageMode === 'history' || state.languageMode === 'geography' || state.languageMode === 'chemistry') ? 'block' : 'none';
 
         // Load verse config for Latin mode and show/hide verse panel
         await updateVersePanel();
@@ -661,7 +667,7 @@ async function switchLanguageMode() {
 
 // Handle literature topic change
 async function onLiteratureTopicChange() {
-    if (state.languageMode !== 'literature' && state.languageMode !== 'biology' && state.languageMode !== 'history' && state.languageMode !== 'geography') return;
+    if (state.languageMode !== 'literature' && state.languageMode !== 'biology' && state.languageMode !== 'history' && state.languageMode !== 'geography' && state.languageMode !== 'chemistry') return;
     const topicSelect = document.getElementById('literatureTopic');
     if (!topicSelect) return;
 
@@ -695,7 +701,7 @@ async function onLiteratureTopicChange() {
     updateProgressDisplay();
 
     // Show/hide saved cross-exam session for this topic
-    if (state.languageMode === 'biology' || state.languageMode === 'history' || state.languageMode === 'geography') {
+    if (state.languageMode === 'biology' || state.languageMode === 'history' || state.languageMode === 'geography' || state.languageMode === 'chemistry') {
         updateCrossExamLastSession(state.literatureTopicId);
     }
 }
@@ -895,7 +901,7 @@ async function updateProgressDisplay() {
     }
     
     // Handle Literature / Biology mode (topics)
-    if (state.languageMode === 'literature' || state.languageMode === 'biology' || state.languageMode === 'history' || state.languageMode === 'geography') {
+    if (state.languageMode === 'literature' || state.languageMode === 'biology' || state.languageMode === 'history' || state.languageMode === 'geography' || state.languageMode === 'chemistry' || state.languageMode === 'chemistry') {
         if (!state.literatureTopicId) {
             progressSummary.style.display = 'none';
             return;
@@ -1299,7 +1305,7 @@ async function startSession() {
     }
 
     // Validate topic selection for Literature mode
-    if ((state.languageMode === 'literature' || state.languageMode === 'biology' || state.languageMode === 'history' || state.languageMode === 'geography') && !state.literatureTopicId) {
+    if ((state.languageMode === 'literature' || state.languageMode === 'biology' || state.languageMode === 'history' || state.languageMode === 'geography' || state.languageMode === 'chemistry' || state.languageMode === 'chemistry') && !state.literatureTopicId) {
         alert('Моля, изберете тема');
         return;
     }
@@ -1316,7 +1322,7 @@ async function startSession() {
             body: JSON.stringify({
                 language_mode: state.languageMode,
                 direction: direction,
-                topic_id: (state.languageMode === 'literature' || state.languageMode === 'biology' || state.languageMode === 'history' || state.languageMode === 'geography') ? state.literatureTopicId : undefined
+                topic_id: (state.languageMode === 'literature' || state.languageMode === 'biology' || state.languageMode === 'history' || state.languageMode === 'geography' || state.languageMode === 'chemistry' || state.languageMode === 'chemistry') ? state.literatureTopicId : undefined
             })
         });
         const countData = await countResponse.json();
@@ -1360,7 +1366,7 @@ async function startSession() {
     // Get list of words already answered correctly for this direction
     const excludeWords = (state.config && state.config.has_lessons)
         ? getCorrectWordsForLessons(state.selectedLessons, direction)
-        : ((state.languageMode === 'literature' || state.languageMode === 'biology' || state.languageMode === 'history' || state.languageMode === 'geography')
+        : ((state.languageMode === 'literature' || state.languageMode === 'biology' || state.languageMode === 'history' || state.languageMode === 'geography' || state.languageMode === 'chemistry' || state.languageMode === 'chemistry')
             ? getCorrectLiteratureQuestions(state.literatureTopicId, direction)
             : (direction === 'latin_mixed' 
                 ? [...getCorrectWordsForDirection('latin_to_bulgarian'), ...getCorrectWordsForDirection('bulgarian_to_latin')]
@@ -1381,7 +1387,7 @@ async function startSession() {
             count,
             time_per_question: timePerQuestion,
             selected_lessons: (state.config && state.config.has_lessons) ? state.selectedLessons : [],
-            topic_id: (state.languageMode === 'literature' || state.languageMode === 'biology' || state.languageMode === 'history' || state.languageMode === 'geography') ? state.literatureTopicId : null,
+            topic_id: (state.languageMode === 'literature' || state.languageMode === 'biology' || state.languageMode === 'history' || state.languageMode === 'geography' || state.languageMode === 'chemistry' || state.languageMode === 'chemistry') ? state.literatureTopicId : null,
             use_all_words: useAllWords,
             exclude_correct_words: excludeWords,
             random_order: randomOrder
@@ -1432,7 +1438,7 @@ async function startSession() {
         state.timePerQuestion = data.time_per_question; // Get from server response
         state.currentIndex = 0;
 
-        if (state.languageMode === 'biology' || state.languageMode === 'history' || state.languageMode === 'geography') {
+        if (state.languageMode === 'biology' || state.languageMode === 'history' || state.languageMode === 'geography' || state.languageMode === 'chemistry') {
             const ids = data.questions.map(q => q.question_id);
             const dupes = ids.filter((id, i) => ids.indexOf(id) !== i);
             console.log(`[${state.languageMode}] Question IDs received:`, ids);
@@ -1447,7 +1453,7 @@ async function startSession() {
         state.config.direction = direction;
 
         if (sessionMode === 'training') {
-            if (state.languageMode === 'biology') {
+            if (state.languageMode === 'biology' || state.languageMode === 'history' || state.languageMode === 'geography' || state.languageMode === 'chemistry') {
                 state.mode = 'study_guide';
                 await showStudyGuide();
             } else {
@@ -1679,7 +1685,7 @@ async function startQuizAfterTraining() {
                 word_pairs: state.wordPairs,  // Reuse the same words!
                 time_per_question: state.timePerQuestion,  // Keep same time limit
                 selected_lessons: (state.config && state.config.has_lessons) ? state.selectedLessons : [],
-                topic_id: (state.languageMode === 'literature' || state.languageMode === 'biology' || state.languageMode === 'history' || state.languageMode === 'geography') ? state.literatureTopicId : null
+                topic_id: (state.languageMode === 'literature' || state.languageMode === 'biology' || state.languageMode === 'history' || state.languageMode === 'geography' || state.languageMode === 'chemistry' || state.languageMode === 'chemistry') ? state.literatureTopicId : null
             })
         });
 
@@ -1731,7 +1737,7 @@ function displayQuestion() {
 
     document.getElementById('progressFill').style.width = progress + '%';
     document.getElementById('questionCounter').textContent = 
-        (state.languageMode === 'literature' || state.languageMode === 'biology' || state.languageMode === 'history' || state.languageMode === 'geography' || isVerse)
+        (state.languageMode === 'literature' || state.languageMode === 'biology' || state.languageMode === 'history' || state.languageMode === 'geography' || state.languageMode === 'chemistry' || state.languageMode === 'chemistry' || isVerse)
             ? `Въпрос ${state.currentIndex + 1} от ${state.questions.length}`
             : `Question ${state.currentIndex + 1} of ${state.questions.length}`;
     document.getElementById('questionLabel').textContent = question.prompt_label;
@@ -1759,7 +1765,7 @@ function displayQuestion() {
         questionTextEl.innerHTML = question.prompt.split('\n').map(l =>
             `<div style="text-align: left; margin: 4px 0; font-style: italic;">${l}</div>`
         ).join('');
-    } else if ((state.languageMode === 'literature' || state.languageMode === 'biology' || state.languageMode === 'history' || state.languageMode === 'geography') && Array.isArray(question.choices) && question.choices.length > 0) {
+    } else if ((state.languageMode === 'literature' || state.languageMode === 'biology' || state.languageMode === 'history' || state.languageMode === 'geography' || state.languageMode === 'chemistry' || state.languageMode === 'chemistry') && Array.isArray(question.choices) && question.choices.length > 0) {
         const escapeHtml = (s) => String(s)
             .replace(/&/g, '&amp;')
             .replace(/</g, '&lt;')
@@ -1874,6 +1880,7 @@ function displayQuestion() {
     
     // Update keyboard visibility based on direction
     updateKeyboardVisibility();
+    updateChemKeyboardVisibility();
 
     // Start backend timer when the question is actually shown.
     if (state.sessionId) {
@@ -1893,7 +1900,7 @@ async function submitAnswer(isTimeout = false) {
 
     const isVerse = state.isVerseMode;
     const currentQuestion = state.questions[state.currentIndex];
-    const isBiologyOpenEnded = (state.languageMode === 'biology' || state.languageMode === 'history' || state.languageMode === 'geography') && currentQuestion?.question_type === 'open';
+    const isBiologyOpenEnded = (state.languageMode === 'biology' || state.languageMode === 'history' || state.languageMode === 'geography' || state.languageMode === 'chemistry') && currentQuestion?.question_type === 'open';
     const isLLMGraded = state.languageMode === 'literature' || isBiologyOpenEnded || isVerse;
 
     // Get answer from the right input element
@@ -1994,7 +2001,7 @@ function displayFeedback(result, wasTimeout = false) {
     const isActualTimeout = (wasTimeout === true || result.timed_out === true);
     const isVerse = state.isVerseMode;
     const currentQuestion = state.questions[state.currentIndex];
-    const isBiologyOpenEnded = (state.languageMode === 'biology' || state.languageMode === 'history' || state.languageMode === 'geography') && currentQuestion?.question_type === 'open';
+    const isBiologyOpenEnded = (state.languageMode === 'biology' || state.languageMode === 'history' || state.languageMode === 'geography' || state.languageMode === 'chemistry') && currentQuestion?.question_type === 'open';
     const isLLMGraded = state.languageMode === 'literature' || isBiologyOpenEnded || isVerse;
 
     // Helper to format correct answer (may be multiline for verse)
@@ -2118,7 +2125,7 @@ async function showSummary() {
         let html = '';
 
         // LLM-graded summary (literature, biology, or verse)
-        if (state.languageMode === 'literature' || state.languageMode === 'biology' || state.languageMode === 'history' || state.languageMode === 'geography' || state.isVerseMode) {
+        if (state.languageMode === 'literature' || state.languageMode === 'biology' || state.languageMode === 'history' || state.languageMode === 'geography' || state.languageMode === 'chemistry' || state.languageMode === 'chemistry' || state.isVerseMode) {
             const formatText = (text) => {
                 if (!text) return '';
                 if (state.isVerseMode && text.includes('\n')) {
@@ -2233,7 +2240,7 @@ function saveQuizProgress(summary) {
     // state.answers[i].correct is true if fully correct, false if wrong
     // state.answers[i].partial_credit is true if accent/aspiration error
     state.wordPairs.forEach((wordPair, index) => {
-        const lesson = (state.languageMode === 'literature' || state.languageMode === 'biology' || state.languageMode === 'history' || state.languageMode === 'geography') ? wordPair.topic_id : wordPair.lesson;
+        const lesson = (state.languageMode === 'literature' || state.languageMode === 'biology' || state.languageMode === 'history' || state.languageMode === 'geography' || state.languageMode === 'chemistry' || state.languageMode === 'chemistry') ? wordPair.topic_id : wordPair.lesson;
         
         // For lesson-based modes, lesson is required
         if ((state.config && state.config.has_lessons) && !lesson) {
@@ -2261,7 +2268,7 @@ function saveQuizProgress(summary) {
         // - Verse: mastered if score_percent >= 70
         const LITERATURE_MASTERED_THRESHOLD = 85;
         const VERSE_MASTERED_THRESHOLD = 70;
-        const isLLMGraded = state.languageMode === 'literature' || state.languageMode === 'biology' || state.languageMode === 'history' || state.languageMode === 'geography' || state.isVerseMode;
+        const isLLMGraded = state.languageMode === 'literature' || state.languageMode === 'biology' || state.languageMode === 'history' || state.languageMode === 'geography' || state.languageMode === 'chemistry' || state.languageMode === 'chemistry' || state.isVerseMode;
         const llmThreshold = state.isVerseMode ? VERSE_MASTERED_THRESHOLD : LITERATURE_MASTERED_THRESHOLD;
         const wasFullyCorrect = isLLMGraded
             ? (answerResult.score_percent !== undefined && answerResult.score_percent !== null && answerResult.score_percent >= llmThreshold && answerResult.timed_out !== true)
@@ -2275,7 +2282,7 @@ function saveQuizProgress(summary) {
                 : (state.languageMode === 'spanish'
                     ? wordPair.spanish
                     : wordPair.question_id));
-        const word2 = (state.languageMode === 'literature' || state.languageMode === 'biology' || state.languageMode === 'history' || state.languageMode === 'geography') ? '' : wordPair.bulgarian;
+        const word2 = (state.languageMode === 'literature' || state.languageMode === 'biology' || state.languageMode === 'history' || state.languageMode === 'geography' || state.languageMode === 'chemistry' || state.languageMode === 'chemistry') ? '' : wordPair.bulgarian;
         
         console.log(`[Save Progress] Word ${index}: ${word1} ↔ ${word2}, Lesson ${lesson || 'N/A'}`);
         console.log(`[Save Progress]   - correct: ${answerResult.correct}, partial_credit: ${answerResult.partial_credit}, wasFullyCorrect: ${wasFullyCorrect}`);
@@ -2301,7 +2308,7 @@ function saveQuizProgress(summary) {
         
         if (wasFullyCorrect) {
             // Mark as mastered
-            if (state.languageMode === 'literature' || state.languageMode === 'biology' || state.languageMode === 'history' || state.languageMode === 'geography') {
+            if (state.languageMode === 'literature' || state.languageMode === 'biology' || state.languageMode === 'history' || state.languageMode === 'geography' || state.languageMode === 'chemistry' || state.languageMode === 'chemistry') {
                 progress.wordProgress[progressKey] = {
                     topic_id: wordPair.topic_id,
                     question_id: wordPair.question_id,
@@ -2387,7 +2394,7 @@ function restartQuiz() {
 async function showStudyGuide() {
     const topicId = state.literatureTopicId;
     try {
-        const resp = await fetch(`${API_BASE}/biology/study-guide/${encodeURIComponent(topicId)}`);
+        const resp = await fetch(`${API_BASE}/study-guide/${state.languageMode}/${encodeURIComponent(topicId)}`);
         if (!resp.ok) throw new Error('Failed to load study guide');
         const data = await resp.json();
         displayStudyGuide(data);
@@ -2405,48 +2412,93 @@ function displayStudyGuide(data) {
     const titleEl = document.getElementById('studyGuideTitle');
     if (titleEl) titleEl.textContent = data.title || '📚 Преговор';
 
-    const container = document.getElementById('studyGuideContent');
-    let html = '';
+    // Build summary page (overview + sections)
+    const summaryEl = document.getElementById('studyGuideSummary');
+    let summaryHtml = '';
 
     if (data.overview) {
-        html += `<div class="study-guide-overview">${data.overview}</div>`;
+        summaryHtml += `<div class="study-guide-overview">${data.overview}</div>`;
     }
 
     (data.sections || []).forEach(section => {
-        html += `<div class="study-guide-section">
+        summaryHtml += `<div class="study-guide-section">
             <h3 class="study-guide-section-title">${section.title}</h3>
-            <p class="study-guide-summary">${section.summary}</p>`;
+            <p class="study-guide-summary">${(section.summary || '').replace(/\n/g, '<br>')}</p>`;
 
         if (section.must_know && section.must_know.length) {
-            html += `<div class="study-guide-must-know"><strong>Задължително знай:</strong><ul>`;
-            section.must_know.forEach(item => { html += `<li>${item}</li>`; });
-            html += `</ul></div>`;
+            summaryHtml += `<div class="study-guide-must-know"><strong>Задължително знай:</strong><ul>`;
+            section.must_know.forEach(item => { summaryHtml += `<li>${item}</li>`; });
+            summaryHtml += `</ul></div>`;
         }
 
         if (section.key_terms && section.key_terms.length) {
-            html += `<div class="study-guide-key-terms"><strong>Ключови понятия:</strong><dl>`;
+            summaryHtml += `<div class="study-guide-key-terms"><strong>Ключови понятия:</strong><dl>`;
             section.key_terms.forEach(t => {
-                html += `<dt>${t.term}</dt><dd>${t.definition}</dd>`;
+                summaryHtml += `<dt>${t.term}</dt><dd>${t.definition}</dd>`;
             });
-            html += `</dl></div>`;
+            summaryHtml += `</dl></div>`;
         }
 
         if (section.compare_points && section.compare_points.length) {
-            html += `<div class="study-guide-compare"><strong>Сравни:</strong><ul>`;
-            section.compare_points.forEach(p => { html += `<li>${p}</li>`; });
-            html += `</ul></div>`;
+            summaryHtml += `<div class="study-guide-compare"><strong>Сравни:</strong><ul>`;
+            section.compare_points.forEach(p => { summaryHtml += `<li>${p}</li>`; });
+            summaryHtml += `</ul></div>`;
         }
 
-        html += `</div>`;
+        summaryHtml += `</div>`;
     });
 
-    if (data.final_recap && data.final_recap.must_remember) {
-        html += `<div class="study-guide-recap"><h3>📌 Запомни задължително:</h3><ul>`;
-        data.final_recap.must_remember.forEach(item => { html += `<li>${item}</li>`; });
-        html += `</ul></div>`;
+    summaryEl.innerHTML = summaryHtml;
+
+    // Build final recap page
+    const recapEl = document.getElementById('studyGuideRecap');
+    let hasRecap = false;
+
+    if (data.final_recap) {
+        let recapHtml = '';
+        if (typeof data.final_recap === 'string') {
+            // Chemistry format: plain string
+            recapHtml = `<div class="study-guide-recap"><h3>📌 Запомни задължително:</h3><p>${data.final_recap.replace(/\n/g, '<br>')}</p></div>`;
+            hasRecap = true;
+        } else if (data.final_recap.must_remember && data.final_recap.must_remember.length > 0) {
+            // Biology format: { must_remember: [...] }
+            recapHtml = `<div class="study-guide-recap"><h3>📌 Запомни задължително:</h3><ul>`;
+            data.final_recap.must_remember.forEach(item => { recapHtml += `<li>${item}</li>`; });
+            recapHtml += `</ul></div>`;
+            hasRecap = true;
+        }
+        recapEl.innerHTML = recapHtml;
     }
 
-    container.innerHTML = html;
+    // Show/hide buttons depending on whether recap exists
+    const nextBtn = document.getElementById('studyGuideNextBtn');
+    const backBtn = document.getElementById('studyGuideBackBtn');
+    const examBtn = document.getElementById('studyGuideExamBtn');
+    if (nextBtn) nextBtn.style.display = hasRecap ? '' : 'none';
+    if (backBtn) backBtn.style.display = 'none';
+    if (examBtn) examBtn.style.display = hasRecap ? 'none' : '';
+
+    // Start on summary page
+    summaryEl.style.display = '';
+    recapEl.style.display = 'none';
+}
+
+function showStudyGuideRecap() {
+    document.getElementById('studyGuideSummary').style.display = 'none';
+    document.getElementById('studyGuideRecap').style.display = '';
+    document.getElementById('studyGuideNextBtn').style.display = 'none';
+    document.getElementById('studyGuideBackBtn').style.display = '';
+    document.getElementById('studyGuideExamBtn').style.display = '';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function showStudyGuideSummary() {
+    document.getElementById('studyGuideSummary').style.display = '';
+    document.getElementById('studyGuideRecap').style.display = 'none';
+    document.getElementById('studyGuideNextBtn').style.display = '';
+    document.getElementById('studyGuideBackBtn').style.display = 'none';
+    document.getElementById('studyGuideExamBtn').style.display = 'none';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function startExamFromStudyGuide() {

@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Language Trainer</title>
-    
+    <link rel="icon" href="data:,">
+    <link rel="apple-touch-icon" href="data:,">
+
     <!-- CSS Stylesheets -->
     <link rel="stylesheet" href="/static/css/main.css">
     <link rel="stylesheet" href="/static/css/animations.css">
@@ -25,6 +27,7 @@
             <option value="biology">🧬 Biology</option>
             <option value="history">📜 History</option>
             <option value="geography">🌍 Geography</option>
+            <option value="chemistry">🧪 Chemistry</option>
         </select>
     </div>
 
@@ -172,12 +175,19 @@
             </div>
         </div>
 
-        <!-- Biology Study Guide Screen -->
+        <!-- Study Guide Screen -->
         <div class="study-guide-screen" id="studyGuideScreen">
             <h2 id="studyGuideTitle" style="text-align: center; color: #2e7d32; margin-bottom: 20px;">📚 Преговор</h2>
-            <div id="studyGuideContent"></div>
-            <div style="text-align: center; margin-top: 30px; padding-bottom: 30px;">
-                <button class="btn" onclick="startExamFromStudyGuide()" style="background: linear-gradient(135deg, #2e7d32, #1b5e20);">
+            <div id="studyGuideSummary"></div>
+            <div id="studyGuideRecap" style="display: none;"></div>
+            <div id="studyGuideButtons" style="text-align: center; margin-top: 30px; padding-bottom: 30px;">
+                <button class="btn" id="studyGuideNextBtn" onclick="showStudyGuideRecap()" style="background: linear-gradient(135deg, #1565c0, #0d47a1);">
+                    📌 Запомни задължително →
+                </button>
+                <button class="btn" id="studyGuideBackBtn" onclick="showStudyGuideSummary()" style="display: none; background: linear-gradient(135deg, #546e7a, #37474f); margin-right: 10px;">
+                    ← Обратно към урока
+                </button>
+                <button class="btn" id="studyGuideExamBtn" onclick="startExamFromStudyGuide()" style="background: linear-gradient(135deg, #2e7d32, #1b5e20);">
                     Готов съм → Започни изпита
                 </button>
             </div>
@@ -277,6 +287,9 @@
                 </div>
                 <!-- Verse translation textarea (shown only in verse mode) -->
                 <textarea id="verseAnswerInput" placeholder="Въведете превода тук..." rows="6" style="display: none; width: 100%; padding: 12px; font-size: 16px; border: 2px solid #c4a882; border-radius: 8px; resize: vertical; font-family: inherit; box-sizing: border-box;"></textarea>
+                <button class="keyboard-toggle" id="chemKeyboardToggle" onclick="toggleChemKeyboard()" style="display: none;">
+                    ⌨️ Формули
+                </button>
                 <button class="keyboard-toggle" id="keyboardToggle" onclick="toggleGreekKeyboard()">
                     ⌨️ Show Greek Keyboard
                 </button>
@@ -346,6 +359,68 @@
                         <button class="greek-key" onclick="insertGreek('-')">-</button>
                         <button class="greek-key" onclick="insertGreek(' ')">space</button>
                         <button class="greek-key" onclick="resetDiacritics()">🔄 Reset Diacritics</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chemistry Virtual Keyboard -->
+            <div class="chem-keyboard-container" id="chemKeyboard">
+                <div class="keyboard-section">
+                    <div class="keyboard-section-title">Долен индекс (subscript)</div>
+                    <div class="keyboard-row">
+                        <button class="chem-key" onclick="insertChem('₀')">₀</button>
+                        <button class="chem-key" onclick="insertChem('₁')">₁</button>
+                        <button class="chem-key sub-key" onclick="insertChem('₂')">₂</button>
+                        <button class="chem-key sub-key" onclick="insertChem('₃')">₃</button>
+                        <button class="chem-key sub-key" onclick="insertChem('₄')">₄</button>
+                        <button class="chem-key" onclick="insertChem('₅')">₅</button>
+                        <button class="chem-key" onclick="insertChem('₆')">₆</button>
+                        <button class="chem-key" onclick="insertChem('₇')">₇</button>
+                        <button class="chem-key" onclick="insertChem('₈')">₈</button>
+                        <button class="chem-key" onclick="insertChem('₉')">₉</button>
+                    </div>
+                </div>
+
+                <div class="keyboard-section">
+                    <div class="keyboard-section-title">Горен индекс (superscript)</div>
+                    <div class="keyboard-row">
+                        <button class="chem-key" onclick="insertChem('⁰')">⁰</button>
+                        <button class="chem-key" onclick="insertChem('¹')">¹</button>
+                        <button class="chem-key sup-key" onclick="insertChem('²')">²</button>
+                        <button class="chem-key sup-key" onclick="insertChem('³')">³</button>
+                        <button class="chem-key" onclick="insertChem('⁴')">⁴</button>
+                        <button class="chem-key" onclick="insertChem('⁵')">⁵</button>
+                        <button class="chem-key" onclick="insertChem('⁶')">⁶</button>
+                        <button class="chem-key" onclick="insertChem('⁷')">⁷</button>
+                        <button class="chem-key sup-key" onclick="insertChem('⁺')">⁺</button>
+                        <button class="chem-key sup-key" onclick="insertChem('⁻')">⁻</button>
+                    </div>
+                </div>
+
+                <div class="keyboard-section">
+                    <div class="keyboard-section-title">Стрелки и символи</div>
+                    <div class="keyboard-row">
+                        <button class="chem-key arrow-key" onclick="insertChem('→')">→</button>
+                        <button class="chem-key arrow-key" onclick="insertChem('⇌')">⇌</button>
+                        <button class="chem-key" onclick="insertChem('↓')">↓</button>
+                        <button class="chem-key" onclick="insertChem('↑')">↑</button>
+                        <button class="chem-key" onclick="insertChem('·')">·</button>
+                        <button class="chem-key" onclick="insertChem('Δ')">Δ</button>
+                        <button class="chem-key" onclick="insertChem('α')">α</button>
+                        <button class="chem-key" onclick="insertChem('°')">°</button>
+                    </div>
+                </div>
+
+                <div class="keyboard-section">
+                    <div class="keyboard-section-title">Бързо въвеждане</div>
+                    <div class="keyboard-row">
+                        <button class="chem-key wide" onclick="insertChem('²⁺')">²⁺</button>
+                        <button class="chem-key wide" onclick="insertChem('³⁺')">³⁺</button>
+                        <button class="chem-key wide" onclick="insertChem('²⁻')">²⁻</button>
+                        <button class="chem-key wide" onclick="insertChem('³⁻')">³⁻</button>
+                        <button class="chem-key wide" onclick="insertChem('e⁻')">e⁻</button>
+                        <button class="chem-key wide" onclick="insertChem('OH⁻')">OH⁻</button>
+                        <button class="chem-key wide" onclick="insertChem('H₂O')">H₂O</button>
                     </div>
                 </div>
             </div>
@@ -463,5 +538,6 @@
     <!-- JavaScript Files -->
     <script src="/static/js/app.js?v=11"></script>
     <script src="/static/js/greek-keyboard.js"></script>
+    <script src="/static/js/chemistry-keyboard.js"></script>
 </body>
 </html>

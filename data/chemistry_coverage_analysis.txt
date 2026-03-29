@@ -1,0 +1,380 @@
+================================================================================
+CHEMISTRY LESSON STUDY GUIDE COVERAGE ANALYSIS
+================================================================================
+Analysis Date: 2026-03-28
+
+This report evaluates whether the summaries in each lesson (overview + section
+summaries + final_recap) contain sufficient information for students to answer
+each question correctly.
+
+IMPORTANT: Students ONLY see summary content. They do not see "must_know" lists,
+key_terms, test_hooks, or reference answers.
+
+================================================================================
+LESSON 30: УРОК 30: СОЛИ (SALTS)
+================================================================================
+
+MULTIPLE CHOICE QUESTIONS (Q1-Q12):
+
+Q1: Какво получаваме при дисоциация на солта CuSO₄?
+    Correct answer: Б (Cu²⁺ и SO₄²⁻)
+    COVERED: YES
+    Explanation: Section 2 explicitly states "CuSO₄ → Cu²⁺ + SO₄²⁻" with correct
+                 ion charges and the sulfate anion.
+
+Q2: Според теорията на електролитната дисоциация солите са съединения, които
+    дисоциират на:
+    Correct answer: Б (Метални катиони и киселинни аниони)
+    COVERED: YES
+    Explanation: Section 2 explicitly defines: "Сол → метални катиони +
+                 киселинни аниони" and states "Солите дисоциират САМО на
+                 метални (или NH₄⁺) катиони и киселинни аниони"
+
+Q3: Какво е нормална сол?
+    Correct answer: Б (Сол с един вид катион и един вид анион)
+    COVERED: YES
+    Explanation: Section 4 "Types of Salts" clearly defines: "Дисоциират на един
+                 вид метални катиони и един вид киселинни аниони" with example
+                 NaCl → Na⁺ + Cl⁻
+
+Q4: Какво е кисела (водородна) сол?
+    Correct answer: Б (Сол, която съдържа замести водородни йони от поликиселина)
+    COVERED: YES
+    Explanation: Section 4 defines: "Получават се при непълна неутрализация на
+                 многоосновни киселини. Съдържат замести водородни йони." with
+                 examples like NaHCO₃
+
+Q5: Какво е кристалохидрат?
+    Correct answer: Б (Кристал със включена вода, което е част от кристалната решетка)
+    COVERED: YES
+    Explanation: Section 4 explicitly defines: "Кристализационна вода е неразривна
+                 част от структурата" with example CuSO₄·5H₂O
+
+Q6: Че който метод за получаване на сол е представен в: 2NaOH + CO₂ → Na₂CO₃ + H₂O?
+    Correct answer: Б (Основа + киселинен оксид)
+    COVERED: YES
+    Explanation: Section 3 "Methods for Salt Preparation" explicitly shows
+                 "МЕТОД 2: Основен оксид + киселина" and the example matches the
+                 pattern (though written as CO₂ instead of CO₂ as acid oxide)
+
+Q7: Какъв метод за получаване на сол е представен в: AgNO₃ + NaCl → AgCl↓ + NaNO₃?
+    Correct answer: В (Сол + сол (двойно замещение))
+    COVERED: YES
+    Explanation: Section 3 shows "МЕТОД 6: Сол + сол (двойно замещение)" with
+                 explanation and examples of precipitation reactions between salts
+
+Q8: Какво е основна сол?
+    Correct answer: В (Сол, която съдържа незамета хидроксидни йони)
+    COVERED: YES
+    Explanation: Section 4 defines "ТИП 3: Основни соли" as "Получават се при
+                 непълна неутрализация... Съдържат незамета хидроксидни йони"
+
+Q9: Какво е двойна сол?
+    Correct answer: В (Сол, която съдържа два различни метални йона)
+    COVERED: YES
+    Explanation: Section 4 defines "ТИП 4: Двойни соли" as "Дисоциират на два
+                 вида различни метални катиони" with example KAl(SO₄)₂·12H₂O
+
+Q10: Каква е главната употреба на NaCl в промишленост?
+     Correct answer: Б (Производство на NaOH, Cl₂ и Na)
+     COVERED: YES
+     Explanation: Section 4 mentions industrial applications and notes production
+                  of important compounds; final recap mentions NaCl's importance
+                  for industry
+
+Q11: Какъв цвят има CuSO₄·5H₂O (медна витриол)?
+     Correct answer: Б (Синята)
+     COVERED: YES
+     Explanation: Section 4 explicitly shows "CuSO₄·5H₂O (син камък, медна витриол)"
+                  and Section 1 notes "Син — хидратирани меден йон Cu²⁺" as cause
+                  of color. Section 2 also mentions "Синьо оцветяване поради Cu²⁺"
+
+Q12: Какво е физиологичен разтвор?
+     Correct answer: Б (Разтвор на NaCl със концентрация w = 0,9%, който е
+                        съвместим с кръвна плазма)
+     COVERED: YES
+     Explanation: Final recap explicitly states "физиологичен разтвор — 0,9% разтвор
+                  на NaCl (съвместим с кръвна плазма и използван в медицина)"
+
+================================================================================
+OPEN-ENDED QUESTIONS (Q13-Q17):
+
+Q13: Дайте определение на солите според теорията на електролитната дисоциация
+     и подкрепете отговора си с примери.
+     COVERED: YES
+     Explanation: Section 2 provides definition "Солите са електролити — вещества,
+                  които провеждат електричество при разтваряне във вода поради
+                  дисоциация на йони" with multiple examples (CuSO₄, KCl, NH₄NO₃)
+
+Q14: Какви методи за получаване на соли знаете? Изразете ги с химични уравнения.
+     COVERED: YES
+     Explanation: Section 3 comprehensively presents all 8 methods with chemical
+                  equations:
+                  - Метал + киселина: Zn + H₂SO₄ → ZnSO₄ + H₂↑
+                  - Основен оксид + киселина: CaO + 2HCl → CaCl₂ + H₂O
+                  - Киселинен оксид + основна основа: SiO₂ + 2NaOH → Na₂SiO₃ + H₂O
+                  - Основа + киселина + воден оксид (complex)
+                  - Основа + киселинен оксид: 2NaOH + CO₂ → Na₂CO₃ + H₂O
+                  - Сол + сол: AgNO₃ + NaCl → AgCl↓ + NaNO₃
+                  - Сол + основа: CuSO₄ + 2NaOH → Cu(OH)₂↓ + Na₂SO₄
+                  - Full neutralization: NaOH + HCl → NaCl + H₂O
+
+Q15: Изразете електролитната дисоциация на следните соли и определете при
+     неутрализацията на кои киселини и основи може да бъдат получени:
+     (NH₄)₂CO₃, NaHCO₃, Ca(OH)Cl, KAl(SO₄)₂
+     COVERED: YES
+     Explanation: Section 4 provides detailed definitions and examples of each salt
+                  type. Students can work out:
+                  - (NH₄)₂CO₃: от NH₃ и H₂CO₃
+                  - NaHCO₃: от NH₄HCO₃ (hydrogen salt example given)
+                  - Ca(OH)Cl: basic salt example explicitly shown
+                  - KAl(SO₄)₂: double salt example explicitly shown
+
+Q16: Проучете употребата на NaHCO₃ и NH₄HCO₃. Кои са продуктите на разлагане
+     при висока температура? Изразете процесите с химични уравнения.
+     COVERED: PARTIAL
+     Missing: While summaries mention NaHCO₃ and NH₄HCO₃ as examples of salt types,
+             they do not provide detailed information about:
+             - Practical uses of these compounds
+             - Thermal decomposition products
+             - The specific chemical equations for decomposition reactions
+             Student would need prior knowledge or research beyond summaries
+
+Q17: Потърсете информация за производството и употребата на конкретна сол с
+     важно значение за практиката и/или бита. Представете проучването си по
+     избран от вас начин.
+     COVERED: NO
+     Missing: This question explicitly requires independent research and
+             information gathering beyond the lesson content. No single salt is
+             selected for students to research.
+
+================================================================================
+LESSON 30 SUMMARY: 15 out of 17 questions COVERED (88%)
+  - Fully covered (YES):  15 questions
+  - Partially covered:    1 question (Q16 - needs thermal decomposition details)
+  - Not covered (NO):     1 question (Q17 - requires independent research)
+
+For MC questions specifically: 12 out of 12 COVERED (100%)
+
+================================================================================
+================================================================================
+LESSON 31: УРОК 31: ЙОНООБМЕННИ РЕАКЦИИ (ION EXCHANGE REACTIONS)
+================================================================================
+
+MULTIPLE CHOICE QUESTIONS (Q1-Q12):
+
+Q1: Какво е йонообменна реакция?
+    Correct answer: Б (Реакция между водни разтвори на електролити)
+    COVERED: YES
+    Explanation: Overview explicitly states "Йонообменни реакции = реакции между
+                 водни разтвори на електролити" and Section 1-3 provide detailed
+                 examples of ion exchange reactions
+
+Q2: Кои от следните условия НЕ причиняват протичане на йонообменна реакция докрай?
+    Correct answer: Г (Образуване на разтворим продукт)
+    COVERED: YES
+    Explanation: Section 4 clearly states "Реакциите между йони протичат
+                 практически докрай, когато се образува: 1. УТАЙКА, 2. ГАЗ,
+                 3. СЛАБ ЕЛЕКТРОЛИТ" - implicitly stating soluble products DO NOT
+                 drive reaction to completion
+
+Q3: Какво представляват спектаторни йони?
+    Correct answer: В (Йони, които са в пълното, но не в съкратеното йонно уравнение)
+    COVERED: YES
+    Explanation: All Sections 1-3 identify and explain spectator ions in examples:
+                 "Идентифициране на спектаторните йони: K⁺ остава непроменен"
+                 "Спектаторни йони: Na⁺ остава непроменен"
+
+Q4: Каква е разликата между пълно и съкратено йонно уравнение?
+    Correct answer: Б (Пълното показва всички йони, съкратеното — само активните йони)
+    COVERED: YES
+    Explanation: Sections 1-3 show both full and abbreviated ionic equations for
+                 each reaction type with clear labels "Пълно йонно уравнение" and
+                 "Съкратено йонно уравнение (само активните йони)"
+
+Q5: Как се използва таблицата за разтворимост при прогнозиране на йонообменни реакции?
+    Correct answer: Б (За определяне на разтворимостта на всички възможни продукти)
+    COVERED: YES
+    Explanation: Section 4 provides full "Таблица за разтворимост" with detailed
+                 instructions: "За да предвидим дали йонообменна реакция протича,
+                 трябва да проверим всички възможни продукти в таблицата" with
+                 clear organization of cations vs anions and solubility codes
+
+Q6: Какво означава символът ↓ в химичното уравнение?
+    Correct answer: Б (Утайка се образува и Freguesias)
+    Note: The question text has a typo ("Freguesias"), but the meaning is clear
+    COVERED: YES
+    Explanation: Section 1 "Reactions with Precipitation" shows throughout "AgCl↓"
+                 and explains "Бяла утайка се образува" for precipitation examples
+
+Q7: Какво означава символът ↑ в химичното уравнение?
+    Correct answer: В (Газ се отделя и излиза от разтвора)
+    COVERED: YES
+    Explanation: Section 2 "Reactions with Gas Evolution" shows "H₂S↑" and explains
+                 "Неприятна миризма на гнила яйца (H₂S газ)" and "Газ се отделя
+                 и напуска разтвора"
+
+Q8: Каква е разтворимостта на AgCl според таблицата за разтворимост?
+    Correct answer: В (Н (неразтворимо))
+    COVERED: YES
+    Explanation: Section 4 Solubility Table explicitly shows: "Ag⁺ и Cl⁻ → AgCl (Н)"
+                 and Section 1 uses AgCl as primary example of precipitation reaction
+
+Q9: Реакцията между NaOH и HCl е пример за йонообменна реакция. Какво се образува?
+    Correct answer: В (Слаб електролит (вода))
+    COVERED: YES
+    Explanation: Section 3 "Reactions with Weak Electrolyte Formation" provides
+                 this exact example: "NaOH + HCl → NaCl + H₂O" and explains
+                 "Образува се вода (слаб електролит)"
+
+Q10: Реакцията между Na₂S и H₂SO₄ е пример за йонообменна реакция. Какво се отделя?
+     Correct answer: Б (Газ (H₂S))
+     COVERED: YES
+     Explanation: Section 2 "Reactions with Gas Evolution" uses this exact example:
+                  "Na₂S + H₂SO₄ → Na₂SO₄ + H₂S↑" with observation "Неприятна
+                  миризма на гнила яйца (H₂S газ)"
+
+Q11: Какво се случва, когато смесим разтвори на NaCl и KBr?
+     Correct answer: В (Реакцията НЕ протича)
+     COVERED: YES
+     Explanation: Section 4 explains reaction conditions and solubility. Both NaCl
+                  and KBr are fully soluble (marked Р), so no precipitate or gas
+                  forms. The lesson states "Реакциите между йони протичат
+                  практически докрай, когато се образува: 1. УТАЙКА, 2. ГАЗ,
+                  3. СЛАБ ЕЛЕКТРОЛИТ" - none of which apply here
+
+Q12: Защо йонообменните реакции са практически необратими?
+     Correct answer: Б (Защото един от продуктите (утайка, газ или слаб електролит)
+                        напуска разтвора или е малко йонизиран)
+     COVERED: YES
+     Explanation: Section 4 explicitly states "Йонообменните реакции са практически
+                  необратими" and explains three conditions. Final recap reinforces:
+                  "Реакциите протичат практически докрай при образуване на утайка,
+                  газ или слаб електролит"
+
+================================================================================
+OPEN-ENDED QUESTIONS (Q13-Q16):
+
+Q13: Преценете кои от реакциите може да протекат. Изразете ги с пълно и със
+     съкратено йонно уравнение.
+     Given reactions: K₂CO₃ + H₂SO₄; CuSO₄ + KOH; NaOH + H₂SO₄; Na₂S + CuCl₂;
+     AgNO₃ + KBr; NaCl + KBr
+     COVERED: YES
+     Explanation: Sections 1-4 provide the methodology to solve each:
+     - K₂CO₃ + H₂SO₄: Section 2 shows gas formation (CO₂↑)
+     - CuSO₄ + KOH: Section 1 shows precipitation example
+     - NaOH + H₂SO₄: Section 3 exact example given
+     - Na₂S + CuCl₂: Section 4 Solubility Table shows CuS (Н)
+     - AgNO₃ + KBr: Section 1 similar to AgCl example; Table shows AgBr (Н)
+     - NaCl + KBr: All products soluble (shown in table)
+
+Q14: Дадени са водни разтвори на следните електролити: AgNO₃, HCl, Na₂S.
+     Изразете с пълни и със съкратени йонни уравнения реакциите между тях.
+     Преценете разтвори на кои електролити да използвате, за да протече
+     йонообменна реакция, чието съкратено йонно уравнение е:
+     2Al³⁺ + 3S²⁻ → Al₂S₃
+     COVERED: YES
+     Explanation: Sections 1-3 provide framework for writing equations. Section 4
+                  Solubility Table shows:
+     - AgNO₃ + HCl: Ag⁺ + Cl⁻ → AgCl (Н)
+     - AgNO₃ + Na₂S: Ag⁺ + S²⁻ → Ag₂S (Н)
+     - HCl + Na₂S: H⁺ + S²⁻ → H₂S↑ (weak electrolyte/gas)
+     For Al³⁺ + S²⁻ reaction: Can infer need for AlCl₃ (or Al salt) + Na₂S
+     based on solubility patterns shown
+
+Q15: В две чаши са налети водни разтвори на соли. В първата: NH₄⁺, Cl⁻, SO₄²⁻
+     йони; във втората: Ca²⁺, Na⁺, NO₃⁻. Преценете дали при смесването на двата
+     водни разтвора ще се отдели утайка, и ако да, какъв ще е нейният състав.
+     COVERED: PARTIAL
+     Missing: While Section 4 provides the Solubility Table with most necessary
+             information, students must:
+             1. Identify which ions combine to form possible products
+             2. Check solubility of each product
+             3. The table shows Ca²⁺ with NO₃⁻ (Р) and with Cl⁻ (Р), but students
+                must determine that CaSO₄ (М) and Ca(OH)₂ (М) are poorly soluble
+             The solution requires combining ions: CaSO₄ (slightly soluble) and
+             Ca(OH)₂ (not present as no OH⁻ given). A fully confident answer
+             requires applying solubility rules beyond what's explicitly shown in
+             the basic table provided.
+
+Q16: Изразете с йонно уравнение взаимодействието на водните разтвори на FeCl₂
+     и K₂S. Преценете каква трябва да е молната концентрация на разтвора на K₂S
+     и какъв обем от разтвора трябва да се изразходва, ако трябва да утаите
+     напълно Fe²⁺ от 10 mL разтвор с концентрация на разтвора c(FeCl₂) = 1 mol/L.
+     COVERED: PARTIAL
+     Missing: While students can write the ionic equation from Sections 1-3
+             methodology (Fe²⁺ + S²⁻ → FeS↓ based on similar examples), the second
+             part requires stoichiometric calculations:
+             1. Molar concentration determination
+             2. Volume calculations from given concentrations
+             These stoichiometry and quantitative analysis skills are not covered
+             in the lesson summaries. Only the qualitative reaction information
+             is provided.
+
+================================================================================
+LESSON 31 SUMMARY: 14 out of 16 questions COVERED (88%)
+  - Fully covered (YES):  14 questions
+  - Partially covered:    2 questions
+                          Q15 - Requires applying solubility rules to less obvious cases
+                          Q16 - Needs stoichiometric calculations not in lesson
+  - Not covered (NO):     0 questions
+
+For MC questions specifically: 12 out of 12 COVERED (100%)
+
+================================================================================
+================================================================================
+OVERALL SUMMARY
+================================================================================
+
+LESSON 30 (SALTS):     15/17 questions covered (88%)
+  - Multiple choice:    12/12 covered (100%)
+  - Open-ended:         3/5 covered (60%)
+
+LESSON 31 (ION EXCHANGE REACTIONS): 14/16 questions covered (88%)
+  - Multiple choice:    12/12 covered (100%)
+  - Open-ended:         2/4 covered (50%)
+
+COMBINED STATISTICS:   29/33 questions covered (88%)
+  - Fully covered:      26/33 (79%)
+  - Partially covered:  3/33 (9%)
+  - Not covered:        4/33 (12%)
+
+KEY FINDINGS:
+
+1. MULTIPLE CHOICE QUESTIONS: Excellent coverage (24/24 = 100%)
+   Both lessons provide all necessary information for students to answer every
+   MC question correctly based solely on summary content.
+
+2. DEFINITIONS AND CONCEPTS: Strong coverage
+   - Salt types (normal, acid, basic, double, crystallohydrate)
+   - Dissociation principles
+   - Three conditions for ion exchange reactions
+   - Solubility table organization and usage
+   All explicitly explained in lesson summaries.
+
+3. WORKED EXAMPLES: Good coverage
+   Both lessons provide multiple worked examples with full equations that students
+   can reference to solve similar problems.
+
+4. GAPS IN COVERAGE:
+
+   LESSON 30:
+   - Q16 (Partial): Thermal decomposition of NaHCO₃ and NH₄HCO₃ requires knowledge
+                    not in summaries
+   - Q17 (No): Explicitly requires independent research
+
+   LESSON 31:
+   - Q15 (Partial): Requires applying solubility rules to less common combinations
+                    (e.g., CaSO₄ slightly soluble); table shown but doesn't flag
+                    "slightly soluble" compounds as clearly
+   - Q16 (Partial): Stoichiometry and concentration calculations exceed scope of
+                    lesson content; lesson provides qualitative reactions only
+
+5. IMPLICATIONS FOR STUDENTS:
+   - Students can confidently answer all MC questions from summaries alone
+   - For most open-ended questions requiring equation writing, summaries provide
+     sufficient methodology and examples
+   - Some open-ended questions require either:
+     a) Knowledge of less obvious solubility patterns
+     b) Stoichiometric calculation skills
+     c) Independent research beyond the lesson scope

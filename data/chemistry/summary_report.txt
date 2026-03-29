@@ -1,0 +1,77 @@
+CHEMISTRY STUDY GUIDE GENERATION - COMPLETION REPORT
+=====================================================
+
+TASK COMPLETED SUCCESSFULLY
+
+Files Updated:
+1. /sessions/wizardly-sweet-ritchie/mnt/data/chemistry/lesson_30_salts.json
+2. /sessions/wizardly-sweet-ritchie/mnt/data/chemistry/lesson_31_ion_exchange_reactions.json
+
+=====================================
+LESSON 30: СОЛИ (Salts)
+=====================================
+
+Section 1: "Строеж и физични свойства на солите"
+  - must_know: 7 items ✓
+  - key_terms: 5 items ✓
+
+Section 2: "Солите като електролити"
+  - must_know: 7 items ✓
+  - key_terms: 5 items ✓
+
+Section 3: "Методи за получаване на соли"
+  - must_know: 7 items ✓
+  - key_terms: 4 items ✓
+
+Section 4: "Видове соли"
+  - must_know: 7 items ✓
+  - key_terms: 5 items ✓
+
+=====================================
+LESSON 31: ЙОНООБМЕННИ РЕАКЦИИ (Ion Exchange Reactions)
+=====================================
+
+Section 1: "Реакции с образуване на утайка"
+  - must_know: 7 items ✓
+  - key_terms: 5 items ✓
+
+Section 2: "Реакции с отделяне на газ"
+  - must_know: 7 items ✓
+  - key_terms: 4 items ✓
+
+Section 3: "Реакции с образуване на слаб електролит"
+  - must_know: 7 items ✓
+  - key_terms: 4 items ✓
+
+Section 4: "Таблица за разтворимост и предвиждане на реакции"
+  - must_know: 7 items ✓
+  - key_terms: 5 items ✓
+
+=====================================
+CONTENT SPECIFICATIONS MET:
+=====================================
+
+✓ All content in Bulgarian
+✓ must_know: 5-7 short, memorizable facts per section
+✓ key_terms: 4-6 definitions per section
+✓ Chemical notation preserved:
+  - Subscripts: CuSO₄, H₂O, CO₂
+  - Superscripts: Cu²⁺, SO₄²⁻, H⁺, OH⁻
+  - Arrows: → (reaction arrow), ↑ (gas evolution), ↓ (precipitation)
+✓ All existing JSON data preserved
+✓ Proper structure maintained
+
+TOTAL ENTRIES ADDED:
+- Lesson 30: 28 must_know items + 19 key_terms
+- Lesson 31: 28 must_know items + 18 key_terms
+- GRAND TOTAL: 56 must_know items + 37 key_terms = 93 study items
+
+=====================================
+PYTHON SCRIPT:
+=====================================
+
+Script: add_study_guide_content.py
+- Modular design with separate functions for each lesson
+- Preserves all existing JSON structure and data
+- Error handling and status reporting included
+- Proper UTF-8 encoding for Bulgarian text

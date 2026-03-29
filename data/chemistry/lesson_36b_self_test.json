@@ -1,0 +1,197 @@
+{
+  "topic_id": "chemistry_lesson_36b_self_test",
+  "title": "Урок 36b: Химични процеси — Самоконтрол",
+  "language": "bg",
+  "source": "data/chemistry/36b. Химични процеси — Самоконтрол.md",
+  "questions": [
+    {
+      "id": "1",
+      "number": 1,
+      "question_type": "mcq",
+      "prompt": "В кой от редовете са записани формули само на електролити?",
+      "choices": [
+        {"key": "А", "text": "HCl, NO, KCl, H₂"},
+        {"key": "Б", "text": "NaOH, CuSO₄, H₂O, CO"},
+        {"key": "В", "text": "KOH, HCl, H₂SO₄, NaNO₃"},
+        {"key": "Г", "text": "C₆H₁₂O₆, NaCl, NO, CO"}
+      ],
+      "correct_choice": "В",
+      "reference_answer": "В) KOH, HCl, H₂SO₄, NaNO₃ — всички са силни електролити (основа, киселини, сол)."
+    },
+    {
+      "id": "2",
+      "number": 2,
+      "question_type": "mcq",
+      "prompt": "Кой от процесите НЕ е електролитна дисоциация?",
+      "choices": [
+        {"key": "А", "text": "2 NaCl → 2 Na + Cl₂"},
+        {"key": "Б", "text": "KOH → K⁺ + OH⁻"},
+        {"key": "В", "text": "H₂SO₄ → 2 H⁺ + SO₄²⁻"},
+        {"key": "Г", "text": "BaCl₂ → Ba²⁺ + 2 Cl⁻"}
+      ],
+      "correct_choice": "А",
+      "reference_answer": "А) 2 NaCl → 2 Na + Cl₂ е електролиза (разлагане с електрически ток), не дисоциация."
+    },
+    {
+      "id": "3",
+      "number": 3,
+      "question_type": "mcq",
+      "prompt": "При кой от процесите на електролитна дисоциация е допусната грешка в уравнението?",
+      "choices": [
+        {"key": "А", "text": "NaBr → Na⁺ + Br⁻"},
+        {"key": "Б", "text": "K₂SO₄ → K₂⁺ + SO₄²⁻"},
+        {"key": "В", "text": "HNO₃ → H⁺ + NO₃⁻"},
+        {"key": "Г", "text": "Ca(OH)₂ → Ca²⁺ + 2 OH⁻"}
+      ],
+      "correct_choice": "Б",
+      "reference_answer": "Б) Грешката е K₂⁺ — правилно е 2 K⁺ (два отделни калиеви йона, а не един двувалентен)."
+    },
+    {
+      "id": "4",
+      "number": 4,
+      "question_type": "mcq",
+      "prompt": "Посочете кой от електролитите, при концентрация c = 0,1 mol/L, е силен електролит.",
+      "choices": [
+        {"key": "А", "text": "α(H₂SO₃) = 20%"},
+        {"key": "Б", "text": "α(HNO₃) = 92%"},
+        {"key": "В", "text": "α(H₂S) = 0,07%"},
+        {"key": "Г", "text": "α(H₃PO₄) = 26%"}
+      ],
+      "correct_choice": "Б",
+      "reference_answer": "Б) HNO₃ с α = 92% е силен електролит (α > 30%)."
+    },
+    {
+      "id": "5",
+      "number": 5,
+      "question_type": "mcq",
+      "prompt": "Посочете водният разтвор на кое от веществата има неутрален характер.",
+      "choices": [
+        {"key": "А", "text": "H₂S"},
+        {"key": "Б", "text": "Ba(OH)₂"},
+        {"key": "В", "text": "CH₃COOH"},
+        {"key": "Г", "text": "KNO₃"}
+      ],
+      "correct_choice": "Г",
+      "reference_answer": "Г) KNO₃ е сол на силна основа и силна киселина — не хидролизира, разтворът е неутрален."
+    },
+    {
+      "id": "6",
+      "number": 6,
+      "question_type": "mcq",
+      "prompt": "Посочете реда, в който водните разтвори на всички електролити променят цвета на лакмуса в червен.",
+      "choices": [
+        {"key": "А", "text": "NaCl, H₂O, K₂S"},
+        {"key": "Б", "text": "HCl, CuSO₄, Na₂CO₃"},
+        {"key": "В", "text": "HBr, HNO₃, CaCl₂"},
+        {"key": "Г", "text": "H₂S, H₂SO₄, CH₃COOH"}
+      ],
+      "correct_choice": "Г",
+      "reference_answer": "Г) H₂S, H₂SO₄, CH₃COOH — всички са киселини и дават кисела среда (лакмусът почервенява)."
+    },
+    {
+      "id": "7",
+      "number": 7,
+      "question_type": "mcq",
+      "prompt": "Коя от химичните реакции НЕ е йонообменна?",
+      "choices": [
+        {"key": "А", "text": "Ca(OH)₂ + CuCl₂ →"},
+        {"key": "Б", "text": "Al + O₂ →"},
+        {"key": "В", "text": "K₂CO₃ + CaCl₂ →"},
+        {"key": "Г", "text": "NaOH + H₂SO₄ →"}
+      ],
+      "correct_choice": "Б",
+      "reference_answer": "Б) Al + O₂ → Al₂O₃ е окислително-редукционна реакция, не йонообменна."
+    },
+    {
+      "id": "8",
+      "number": 8,
+      "question_type": "mcq",
+      "prompt": "Посочете реакцията, която протича с образуване на утайка.",
+      "choices": [
+        {"key": "А", "text": "ZnCl₂ + KOH →"},
+        {"key": "Б", "text": "(NH₄)₂SO₄ + NaOH →"},
+        {"key": "В", "text": "Na₂S + HCl →"},
+        {"key": "Г", "text": "Na₂CO₃ + HCl →"}
+      ],
+      "correct_choice": "А",
+      "reference_answer": "А) ZnCl₂ + 2 KOH → Zn(OH)₂↓ + 2 KCl — образува се неразтворим Zn(OH)₂."
+    },
+    {
+      "id": "9",
+      "number": 9,
+      "question_type": "mcq",
+      "prompt": "Коя от реакциите НЕ може да протече?",
+      "choices": [
+        {"key": "А", "text": "HCl + AgNO₃ →"},
+        {"key": "Б", "text": "K₂SO₄ + BaCl₂ →"},
+        {"key": "В", "text": "Na₂CO₃ + KCl →"},
+        {"key": "Г", "text": "LiOH + HNO₃ →"}
+      ],
+      "correct_choice": "В",
+      "reference_answer": "В) Na₂CO₃ + KCl — не протича, защото всички продукти са разтворими."
+    },
+    {
+      "id": "10",
+      "number": 10,
+      "question_type": "mcq",
+      "prompt": "Кое от означените взаимодействия е пример за процеса неутрализация?",
+      "choices": [
+        {"key": "А", "text": "C₂H₅OH + CH₃COOH →"},
+        {"key": "Б", "text": "Na₂S + HNO₃ →"},
+        {"key": "В", "text": "CuCl₂ + NaOH →"},
+        {"key": "Г", "text": "Ca(OH)₂ + H₂S →"}
+      ],
+      "correct_choice": "Г",
+      "reference_answer": "Г) Ca(OH)₂ + H₂S → CaS + 2 H₂O — неутрализация (основа + киселина → сол + вода)."
+    },
+    {
+      "id": "11",
+      "number": 11,
+      "question_type": "mcq",
+      "prompt": "Кой от процесите е хидролиза на сол?",
+      "choices": [
+        {"key": "А", "text": "CuSO₄ + H₂O →"},
+        {"key": "Б", "text": "CaO + H₂O →"},
+        {"key": "В", "text": "SO₃ + H₂O →"},
+        {"key": "Г", "text": "Na + H₂O →"}
+      ],
+      "correct_choice": "А",
+      "reference_answer": "А) CuSO₄ + H₂O — хидролиза на сол на слаба основа и силна киселина."
+    },
+    {
+      "id": "12",
+      "number": 12,
+      "question_type": "mcq",
+      "prompt": "Кой от процесите НЕ е свързан с отделяне на утайка?",
+      "choices": [
+        {"key": "А", "text": "ZnSO₄ + NaOH →"},
+        {"key": "Б", "text": "HCl + AgNO₃ →"},
+        {"key": "В", "text": "BaCl₂ + H₂SO₄ →"},
+        {"key": "Г", "text": "Na₂S + H₂SO₄ →"}
+      ],
+      "correct_choice": "Г",
+      "reference_answer": "Г) Na₂S + H₂SO₄ → Na₂SO₄ + H₂S↑ — отделя се газ (H₂S), не утайка."
+    },
+    {
+      "id": "13",
+      "number": 13,
+      "question_type": "open",
+      "prompt": "Кои от реакциите може да протекат? Изразете ги с пълно и със съкратено йонно уравнение.\nа) KOH + H₂SO₄ →\nб) NaCl + AgNO₃ →\nв) CuSO₄ + NaBr →",
+      "reference_answer": "а) KOH + H₂SO₄ — протича (неутрализация, образува се слаб електролит H₂O):\n2 KOH + H₂SO₄ → K₂SO₄ + 2 H₂O\nПълно: 2 K⁺ + 2 OH⁻ + 2 H⁺ + SO₄²⁻ → 2 K⁺ + SO₄²⁻ + 2 H₂O\nСъкратено: H⁺ + OH⁻ → H₂O\n\nб) NaCl + AgNO₃ — протича (образува се утайка AgCl):\nNaCl + AgNO₃ → AgCl↓ + NaNO₃\nПълно: Na⁺ + Cl⁻ + Ag⁺ + NO₃⁻ → AgCl↓ + Na⁺ + NO₃⁻\nСъкратено: Ag⁺ + Cl⁻ → AgCl↓\n\nв) CuSO₄ + NaBr — НЕ протича. Всички продукти (CuBr₂ и Na₂SO₄) са разтворими, не се образува утайка, газ или слаб електролит."
+    },
+    {
+      "id": "14",
+      "number": 14,
+      "question_type": "open",
+      "prompt": "Ако разполагате с индикатор и реактивите KOH и H₂SO₄, как бихте разпознали водните разтвори на солите ZnCl₂ и BaCl₂? Изразете химичните процеси с уравнения. Обосновете се.",
+      "reference_answer": "1) С индикатор: ZnCl₂ е сол на слаба основа (Zn(OH)₂) и силна киселина (HCl) — хидролизира, разтворът е киселинен (лакмусът почервенява). BaCl₂ е сол на силна основа (Ba(OH)₂) и силна киселина (HCl) — не хидролизира, разтворът е неутрален (лакмусът не променя цвят).\n\n2) С KOH: ZnCl₂ + 2 KOH → Zn(OH)₂↓ + 2 KCl (бяла утайка). BaCl₂ + KOH → няма реакция (Ba(OH)₂ е разтворим).\n\n3) С H₂SO₄: ZnCl₂ + H₂SO₄ → няма видима реакция (ZnSO₄ и HCl са разтворими). BaCl₂ + H₂SO₄ → BaSO₄↓ + 2 HCl (бяла утайка от BaSO₄).\n\nИ трите метода позволяват разграничаване на двете соли."
+    },
+    {
+      "id": "15",
+      "number": 15,
+      "question_type": "open",
+      "prompt": "Изразете хидролизата на Al₂(SO₄)₃. Какво е pH на разтвора?",
+      "reference_answer": "Al₂(SO₄)₃ е сол на слаба основа (Al(OH)₃) и силна киселина (H₂SO₄).\nАl₂(SO₄)₃ → 2 Al³⁺ + 3 SO₄²⁻\nAl³⁺ свързва OH⁻ от водата:\nAl³⁺ + 3 H₂O ⇌ Al(OH)₃ + 3 H⁺\nПълно уравнение: Al₂(SO₄)₃ + 6 H₂O ⇌ 2 Al(OH)₃ + 3 H₂SO₄\nВ разтвора се натрупват H⁺ йони → pH < 7 (киселинен разтвор)."
+    }
+  ]
+}

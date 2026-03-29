@@ -280,3 +280,75 @@
     color: white;
     border-color: #ff8f00;
 }
+
+/* ==================== Chemistry Virtual Keyboard ==================== */
+
+.chem-keyboard-container {
+    display: none;
+    margin-top: 15px;
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 15px;
+    border: 2px solid #e0e0e0;
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+.chem-keyboard-container.active {
+    display: block;
+    animation: slideDown 0.3s ease;
+}
+
+.chem-key {
+    background: white;
+    border: 2px solid #d0d0d0;
+    border-radius: 6px;
+    padding: 10px 12px;
+    min-width: 42px;
+    min-height: 42px;
+    text-align: center;
+    cursor: pointer;
+    font-size: 18px;
+    transition: all 0.2s;
+    user-select: none;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.chem-key:hover {
+    background: #1976d2;
+    color: white;
+    border-color: #1976d2;
+    transform: translateY(-2px);
+}
+
+.chem-key:active {
+    transform: translateY(0);
+}
+
+.chem-key.sub-key {
+    background: #e3f2fd;
+    border-color: #90caf9;
+}
+
+.chem-key.sup-key {
+    background: #fce4ec;
+    border-color: #f48fb1;
+}
+
+.chem-key.arrow-key {
+    background: #e8f5e9;
+    border-color: #81c784;
+    font-size: 22px;
+}
+
+.chem-key.wide {
+    min-width: 64px;
+    font-size: 16px;
+    padding: 10px 14px;
+    background: #fff3e0;
+    border-color: #ffb74d;
+}
