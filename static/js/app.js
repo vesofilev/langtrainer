@@ -1406,9 +1406,10 @@ async function startSession() {
             topic_id: (state.languageMode === 'literature' || state.languageMode === 'biology' || state.languageMode === 'history' || state.languageMode === 'geography' || state.languageMode === 'chemistry' || state.languageMode === 'chemistry') ? state.literatureTopicId : null,
             use_all_words: useAllWords,
             exclude_correct_words: excludeWords,
-            random_order: randomOrder
+            random_order: randomOrder,
+            no_time_limit_open: state.noTimeLimitOpen
         };
-        
+
         console.log('Starting session with config:', requestBody);
 
         const response = await fetch(`${API_BASE}/quiz`, {
@@ -1701,7 +1702,8 @@ async function startQuizAfterTraining() {
                 word_pairs: state.wordPairs,  // Reuse the same words!
                 time_per_question: state.timePerQuestion,  // Keep same time limit
                 selected_lessons: (state.config && state.config.has_lessons) ? state.selectedLessons : [],
-                topic_id: (state.languageMode === 'literature' || state.languageMode === 'biology' || state.languageMode === 'history' || state.languageMode === 'geography' || state.languageMode === 'chemistry' || state.languageMode === 'chemistry') ? state.literatureTopicId : null
+                topic_id: (state.languageMode === 'literature' || state.languageMode === 'biology' || state.languageMode === 'history' || state.languageMode === 'geography' || state.languageMode === 'chemistry' || state.languageMode === 'chemistry') ? state.literatureTopicId : null,
+                no_time_limit_open: state.noTimeLimitOpen
             })
         });
 
@@ -1970,7 +1972,12 @@ async function submitAnswer(isTimeout = false) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 question_index: state.currentIndex,
-                answer: answer
+                answer: answer,
+                no_time_limit: state.noTimeLimitOpen && (
+                    (currentQuestion && currentQuestion.question_type === 'open')
+                    || state.languageMode === 'literature'
+                    || state.isVerseMode
+                )
             })
         });
 

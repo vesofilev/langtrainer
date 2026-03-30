@@ -88,6 +88,8 @@ class QuizConfig(BaseModel):
     exclude_correct_words: Optional[List[Dict[str, Any]]] = None  # Words already answered correctly (to exclude)
     random_order: bool = True  # If True, randomize word order; if False, use sequential order
 
+    no_time_limit_open: bool = False  # If True, disable time limit for open-ended (LLM-graded) questions
+
     # Literature mode
     topic_id: Optional[str] = None
 
@@ -104,6 +106,7 @@ class QuizStartResponse(BaseModel):
 class AnswerRequest(BaseModel):
     question_index: int
     answer: str
+    no_time_limit: bool = False  # If True, skip timeout check for this answer
 
 
 class AnswerResponse(BaseModel):
@@ -1112,12 +1115,13 @@ class LiteratureSession:
     """Represents an active literature session (topic-based)."""
 
     def __init__(self, session_id: str, topic_id: str, questions: List[LiteratureQuestion], direction: str, time_per_question: int,
-                 grader: LiteratureOpenAIGrader):
+                 grader: LiteratureOpenAIGrader, no_time_limit_open: bool = False):
         self.session_id = session_id
         self.topic_id = topic_id
         self.word_pairs = questions  # Keep attribute name for endpoint compatibility
         self.direction = direction
         self.time_per_question = time_per_question
+        self.no_time_limit_open = no_time_limit_open
         self.answers: List[Optional[float]] = [None] * len(questions)
         self.user_answers: List[str] = [""] * len(questions)
         self.score_percents: List[Optional[int]] = [None] * len(questions)
@@ -1131,6 +1135,11 @@ class LiteratureSession:
     def is_timed_out(self, index: int) -> bool:
         if index not in self.question_start_times:
             return False
+        # Skip timeout for open-ended questions when no_time_limit_open is set
+        if self.no_time_limit_open:
+            q = self.word_pairs[index]
+            if not q.choices:
+                return False
         elapsed = datetime.now() - self.question_start_times[index]
         return elapsed.total_seconds() > self.time_per_question
 
@@ -1673,10 +1682,11 @@ class SessionManager:
         return session
 
     def create_literature_session(self, topic_id: str, questions: List[LiteratureQuestion], direction: str,
-                                  time_per_question: int, grader: LiteratureOpenAIGrader) -> LiteratureSession:
+                                  time_per_question: int, grader: LiteratureOpenAIGrader,
+                                  no_time_limit_open: bool = False) -> LiteratureSession:
         """Create a new literature session"""
         session_id = str(uuid4())
-        session = LiteratureSession(session_id, topic_id, questions, direction, time_per_question, grader)
+        session = LiteratureSession(session_id, topic_id, questions, direction, time_per_question, grader, no_time_limit_open=no_time_limit_open)
         self.sessions[session_id] = session
         return session
 
@@ -2131,6 +2141,7 @@ async def start_quiz(config: QuizConfig):
             direction=config.direction,
             time_per_question=config.time_per_question,
             grader=literature_grader,
+            no_time_limit_open=config.no_time_limit_open,
         )
 
         print(f"\n[{get_timestamp()}] [DEBUG] Literature Quiz Started:")
@@ -2209,6 +2220,7 @@ async def start_quiz(config: QuizConfig):
             direction=config.direction,
             time_per_question=config.time_per_question,
             grader=biology_grader,
+            no_time_limit_open=config.no_time_limit_open,
         )
 
         ids_selected = [q.id for q in selected_questions]
@@ -2290,6 +2302,7 @@ async def start_quiz(config: QuizConfig):
             direction=config.direction,
             time_per_question=config.time_per_question,
             grader=history_grader,
+            no_time_limit_open=config.no_time_limit_open,
         )
 
         ids_selected = [q.id for q in selected_questions]
@@ -2368,6 +2381,7 @@ async def start_quiz(config: QuizConfig):
             direction=config.direction,
             time_per_question=config.time_per_question,
             grader=geography_grader,
+            no_time_limit_open=config.no_time_limit_open,
         )
 
         ids_selected = [q.id for q in selected_questions]
@@ -2446,6 +2460,7 @@ async def start_quiz(config: QuizConfig):
             direction=config.direction,
             time_per_question=config.time_per_question,
             grader=chemistry_grader,
+            no_time_limit_open=config.no_time_limit_open,
         )
 
         ids_selected = [q.id for q in selected_questions]
@@ -2799,6 +2814,9 @@ async def submit_answer(session_id: str, answer_req: AnswerRequest):
         # Get the question being asked
         question = session.get_question(answer_req.question_index)
         
+        # Override session timeout if client says no time limit
+        if answer_req.no_time_limit and hasattr(session, 'no_time_limit_open'):
+            session.no_time_limit_open = True
         score, is_partial_credit, timed_out = session.check_answer(answer_req.question_index, answer_req.answer)
         correct_answer = session.get_correct_answer(answer_req.question_index)
 
