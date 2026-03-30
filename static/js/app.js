@@ -12,6 +12,7 @@ const state = {
     timePerQuestion: 60, // Time limit per question in seconds
     timeRemaining: 60, // Current time remaining
     timerInterval: null, // Timer interval ID
+    noTimeLimitOpen: false, // No time limit for open-ended questions
     selectedLessons: [], // Selected lesson numbers (Greek only)
     availableLessons: [], // All available lessons (Greek only)
     languageMode: 'greek', // 'greek', 'latin', 'spanish', or 'literature'
@@ -1105,6 +1106,20 @@ function startTimer() {
         clearInterval(state.timerInterval);
     }
 
+    // Skip timer for LLM-graded questions if option is set
+    const currentQuestion = state.questions[state.currentIndex];
+    const isLLMQuestion = (currentQuestion && currentQuestion.question_type === 'open')
+        || state.languageMode === 'literature'
+        || state.isVerseMode;
+    if (state.noTimeLimitOpen && isLLMQuestion) {
+        state.timeRemaining = null;
+        const display = document.getElementById('timerDisplay');
+        const container = document.getElementById('timerContainer');
+        if (display) display.textContent = '∞';
+        if (container) container.classList.remove('warning', 'danger');
+        return;
+    }
+
     // Reset timer to configured time
     state.timeRemaining = state.timePerQuestion;
     updateTimerDisplay();
@@ -1362,6 +1377,7 @@ async function startSession() {
 
     // Store time per question in state
     state.timePerQuestion = timePerQuestion;
+    state.noTimeLimitOpen = document.getElementById('noTimeLimitOpen')?.checked || false;
 
     // Get list of words already answered correctly for this direction
     const excludeWords = (state.config && state.config.has_lessons)
