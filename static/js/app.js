@@ -1695,15 +1695,16 @@ async function startQuizAfterTraining() {
         const response = await fetch(`${API_BASE}/quiz`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
+            body: JSON.stringify({
                 language_mode: state.languageMode,  // Include language mode
-                direction, 
+                direction,
                 count: state.wordPairs.length,
                 word_pairs: state.wordPairs,  // Reuse the same words!
                 time_per_question: state.timePerQuestion,  // Keep same time limit
                 selected_lessons: (state.config && state.config.has_lessons) ? state.selectedLessons : [],
                 topic_id: (state.languageMode === 'literature' || state.languageMode === 'biology' || state.languageMode === 'history' || state.languageMode === 'geography' || state.languageMode === 'chemistry' || state.languageMode === 'chemistry') ? state.literatureTopicId : null,
-                no_time_limit_open: state.noTimeLimitOpen
+                no_time_limit_open: state.noTimeLimitOpen,
+                random_order: false  // Keep same order as training
             })
         });
 
