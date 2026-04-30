@@ -1311,6 +1311,15 @@ async function startSession() {
     const sessionMode = document.getElementById('sessionMode').value;
     const direction = document.getElementById('direction').value;
     state.currentDirection = direction; // Store current direction
+
+    // Latin Q&A: prompt is a Bulgarian question, expected answer is verbatim Bulgarian text,
+    // so override the English-by-default labels left over from the regular Latin flow.
+    if (direction === 'latin_qa') {
+        const trainingAnswerLabel = document.getElementById('trainingAnswerLabel');
+        if (trainingAnswerLabel) trainingAnswerLabel.textContent = 'Отговор:';
+        const answerInput = document.getElementById('answerInput');
+        if (answerInput) answerInput.placeholder = 'Въведи отговор...';
+    }
     let count = parseInt(document.getElementById('wordCount').value);
     const timePerQuestion = parseInt(document.getElementById('timePerQuestion').value);
     const useAllWords = document.getElementById('useAllWords').checked;
