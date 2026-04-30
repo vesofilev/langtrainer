@@ -57,6 +57,7 @@ class Direction:
     LATIN_TO_BULGARIAN = "latin_to_bulgarian"
     BULGARIAN_TO_LATIN = "bulgarian_to_latin"
     LATIN_MIXED = "latin_mixed"  # Combined la->bg and bg->la
+    LATIN_QA = "latin_qa"  # Latin culture / open Q&A in Bulgarian, exact-match grading
     SPANISH_TO_BULGARIAN = "spanish_to_bulgarian"
     BULGARIAN_TO_SPANISH = "bulgarian_to_spanish"
     SPANISH_MIXED = "spanish_mixed"  # Combined es->bg and bg->es
@@ -141,6 +142,7 @@ class WordRepository:
                  greek_data_path: str = "data/greek_words_standard.json",
                  latin_la_bg_path: str = "data/phrases_la_bg.json",
                  latin_bg_la_path: str = "data/phrases_bg_la.json",
+                 latin_qa_path: str = "data/latin_qa.json",
                  spanish_data_path: str = "data/spanish_words_standard.json",
                  # Legacy Spanish phrase files (no lessons). Kept for backwards compatibility.
                  spanish_es_bg_path: str = "data/phrases_es_bg.json",
@@ -149,6 +151,7 @@ class WordRepository:
         self.greek_data_path = Path(greek_data_path)
         self.latin_la_bg_path = Path(latin_la_bg_path)
         self.latin_bg_la_path = Path(latin_bg_la_path)
+        self.latin_qa_path = Path(latin_qa_path)
         self.spanish_data_path = Path(spanish_data_path)
         self.spanish_es_bg_path = Path(spanish_es_bg_path)
         self.spanish_bg_es_path = Path(spanish_bg_es_path)
@@ -163,6 +166,7 @@ class WordRepository:
         self.latin_bg_la: List[WordPair] = []  # Bulgarian -> Latin
         self.latin_la_bg_with_lessons: List[Dict] = []  # Raw data with lessons
         self.latin_bg_la_with_lessons: List[Dict] = []  # Raw data with lessons
+        self.latin_qa_with_lessons: List[Dict] = []  # Latin Q&A: [{q, a, Урок}]
 
         # Spanish data (preferred format: like Greek)
         self.spanish_words: List[WordPair] = []
@@ -181,6 +185,7 @@ class WordRepository:
         """Load all language data"""
         self._load_greek_words()
         self._load_latin_phrases()
+        self._load_latin_qa()
         self._load_spanish_words()
         self._load_verse_config()
 
@@ -222,8 +227,11 @@ class WordRepository:
             if item.get("Лема") is not None and item.get("Превод") is not None
         ]
     
-    def get_latin_available_lessons(self) -> List[float]:
-        """Get sorted list of available lesson numbers for Latin."""
+    def get_latin_available_lessons(self, direction: str = None) -> List[float]:
+        """Get sorted list of available lesson numbers for Latin.
+        When direction is LATIN_QA, return only Q&A lessons; otherwise return phrase lessons."""
+        if direction == Direction.LATIN_QA:
+            return self.get_latin_qa_available_lessons()
         lessons = set()
         for item in self.latin_la_bg_with_lessons:
             if "Урок" in item:
@@ -235,6 +243,8 @@ class WordRepository:
 
     def get_latin_words_by_lessons(self, lesson_numbers: List[float], direction: str = None) -> List[WordPair]:
         """Get Latin word pairs for specific lessons."""
+        if direction == Direction.LATIN_QA:
+            return self.get_latin_qa_by_lessons(lesson_numbers)
         if direction == Direction.LATIN_TO_BULGARIAN:
             filtered = [item for item in self.latin_la_bg_with_lessons if item.get("Урок") in lesson_numbers]
             return [WordPair(latin=item["la"], bulgarian=item["bg"], lesson=item.get("Урок"), words=item.get("words")) for item in filtered]
@@ -290,6 +300,29 @@ class WordRepository:
             print(f"[{get_timestamp()}] ✓ Loaded {len(self.latin_bg_la)} Bulgarian→Latin phrases")
         else:
             print(f"[{get_timestamp()}] ⚠️  Bulgarian→Latin data file not found: {self.latin_bg_la_path}")
+
+    def _load_latin_qa(self):
+        """Load Latin Q&A entries (open question + verbatim Bulgarian answer)."""
+        if not self.latin_qa_path.exists():
+            print(f"[{get_timestamp()}] ⚠️  Latin Q&A data file not found: {self.latin_qa_path}")
+            return
+        with open(self.latin_qa_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        self.latin_qa_with_lessons = data
+        print(f"[{get_timestamp()}] ✓ Loaded {len(self.latin_qa_with_lessons)} Latin Q&A entries")
+
+    def get_latin_qa_available_lessons(self) -> List[float]:
+        """Return sorted list of lessons present in the Latin Q&A file."""
+        return sorted({item.get("Урок") for item in self.latin_qa_with_lessons if item.get("Урок") is not None})
+
+    def get_latin_qa_by_lessons(self, lesson_numbers: List[float]) -> List[WordPair]:
+        """Return Latin Q&A items as WordPair (latin=question, bulgarian=verbatim answer)."""
+        filtered = [item for item in self.latin_qa_with_lessons if item.get("Урок") in lesson_numbers]
+        return [
+            WordPair(latin=item["q"], bulgarian=item["a"], lesson=item.get("Урок"))
+            for item in filtered
+            if item.get("q") is not None and item.get("a") is not None
+        ]
 
     def _load_spanish_phrases(self):
         """Load Spanish phrases from JSON files"""
@@ -360,6 +393,8 @@ class WordRepository:
                 # For mixed mode, return empty list - it's handled specially in start_quiz
                 # This prevents accidental combining of both lists
                 return []
+            elif direction == Direction.LATIN_QA:
+                return self.get_latin_qa_by_lessons(self.get_latin_qa_available_lessons())
         elif language_mode == LanguageMode.SPANISH:
             # Spanish behaves like Greek: one list, direction determines prompt/answer.
             if len(self.spanish_words) > 0:
@@ -1296,6 +1331,12 @@ class QuizSession:
             if pair.words:
                 q["words"] = pair.words
             return q
+        elif self.direction == Direction.LATIN_QA and has_latin:
+            return {
+                "question_id": str(index),
+                "prompt": pair.latin,
+                "prompt_label": "Въпрос"
+            }
         elif self.direction == Direction.BULGARIAN_TO_LATIN and has_latin:
             return {
                 "question_id": str(index),
@@ -1415,7 +1456,7 @@ class QuizSession:
         has_spanish = pair.spanish is not None
         
         # Determine correct answer based on direction and available data
-        if self.direction in [Direction.GREEK_TO_BULGARIAN, Direction.LATIN_TO_BULGARIAN, Direction.SPANISH_TO_BULGARIAN]:
+        if self.direction in [Direction.GREEK_TO_BULGARIAN, Direction.LATIN_TO_BULGARIAN, Direction.SPANISH_TO_BULGARIAN, Direction.LATIN_QA]:
             correct_answer = pair.bulgarian
         elif self.direction == Direction.BULGARIAN_TO_GREEK and has_greek:
             correct_answer = pair.greek
@@ -1470,7 +1511,7 @@ class QuizSession:
         
         # Determine if we're answering in Bulgarian (any variant acceptable) or foreign language (full answer required)
         answering_in_bulgarian = False
-        if self.direction in [Direction.GREEK_TO_BULGARIAN, Direction.LATIN_TO_BULGARIAN, Direction.SPANISH_TO_BULGARIAN]:
+        if self.direction in [Direction.GREEK_TO_BULGARIAN, Direction.LATIN_TO_BULGARIAN, Direction.SPANISH_TO_BULGARIAN, Direction.LATIN_QA]:
             answering_in_bulgarian = True
         elif self.direction == Direction.LATIN_MIXED:
             # Check actual_direction field
@@ -1547,7 +1588,7 @@ class QuizSession:
         has_latin = pair.latin is not None
         has_spanish = pair.spanish is not None
         
-        if self.direction in [Direction.GREEK_TO_BULGARIAN, Direction.LATIN_TO_BULGARIAN, Direction.SPANISH_TO_BULGARIAN]:
+        if self.direction in [Direction.GREEK_TO_BULGARIAN, Direction.LATIN_TO_BULGARIAN, Direction.SPANISH_TO_BULGARIAN, Direction.LATIN_QA]:
             return pair.bulgarian
         elif self.direction == Direction.BULGARIAN_TO_GREEK and has_greek:
             return pair.greek
@@ -1607,6 +1648,9 @@ class QuizSession:
                 prompt = pair.bulgarian
                 correct_ans = pair.greek
             elif self.direction == Direction.LATIN_TO_BULGARIAN and has_latin:
+                prompt = pair.latin
+                correct_ans = pair.bulgarian
+            elif self.direction == Direction.LATIN_QA and has_latin:
                 prompt = pair.latin
                 correct_ans = pair.bulgarian
             elif self.direction == Direction.BULGARIAN_TO_LATIN and has_latin:
@@ -1761,12 +1805,18 @@ async def get_config(language_mode: str = LanguageMode.GREEK):
         has_lessons = True
     elif language_mode == LanguageMode.LATIN:
         available_lessons = word_repo.get_latin_available_lessons()
+        # Merge Q&A lessons so they show up in the lesson picker too
+        qa_lessons = word_repo.get_latin_qa_available_lessons()
+        if qa_lessons:
+            available_lessons = sorted(set(available_lessons) | set(qa_lessons))
         total_words = len(word_repo.latin_la_bg) + len(word_repo.latin_bg_la)
         directions = [
             {"value": Direction.LATIN_TO_BULGARIAN, "label": "Latin → Bulgarian"},
             {"value": Direction.BULGARIAN_TO_LATIN, "label": "Bulgarian → Latin"},
             {"value": Direction.LATIN_MIXED, "label": "Mixed (Both Directions)"}
         ]
+        if qa_lessons:
+            directions.append({"value": Direction.LATIN_QA, "label": "Въпрос → Отговор"})
         has_lessons = bool(available_lessons)
     elif language_mode == LanguageMode.SPANISH:
         if len(word_repo.spanish_words) > 0:
@@ -2078,7 +2128,7 @@ async def start_quiz(config: QuizConfig):
     # Validate direction
     valid_directions = [
         Direction.GREEK_TO_BULGARIAN, Direction.BULGARIAN_TO_GREEK,
-        Direction.LATIN_TO_BULGARIAN, Direction.BULGARIAN_TO_LATIN, Direction.LATIN_MIXED,
+        Direction.LATIN_TO_BULGARIAN, Direction.BULGARIAN_TO_LATIN, Direction.LATIN_MIXED, Direction.LATIN_QA,
         Direction.SPANISH_TO_BULGARIAN, Direction.BULGARIAN_TO_SPANISH, Direction.SPANISH_MIXED,
         Direction.LITERATURE_QA, Direction.BIOLOGY_QA, Direction.HISTORY_QA, Direction.GEOGRAPHY_QA,
         Direction.CHEMISTRY_QA

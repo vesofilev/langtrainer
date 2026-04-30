@@ -287,6 +287,8 @@ function viewMasteredWords(lesson = null) {
             directionLabel = 'Latin → Bulgarian';
         } else if (direction === 'bulgarian_to_latin') {
             directionLabel = 'Bulgarian → Latin';
+        } else if (direction === 'latin_qa') {
+            directionLabel = 'Латински въпрос → отговор';
         } else {
             directionLabel = 'Latin Mixed';
         }
@@ -299,7 +301,7 @@ function viewMasteredWords(lesson = null) {
             directionLabel = 'Spanish Mixed';
         }
     }
-    
+
     // Populate modal
     const modal = document.getElementById('masteredWordsModal');
     const statsDivElement = document.getElementById('masteredWordsStats');
@@ -888,6 +890,8 @@ async function updateProgressDisplay() {
             directionLabel = 'Latin → Bulgarian';
         } else if (direction === 'bulgarian_to_latin') {
             directionLabel = 'Bulgarian → Latin';
+        } else if (direction === 'latin_qa') {
+            directionLabel = 'Латински въпрос → отговор';
         } else {
             directionLabel = 'Latin Mixed';
         }
@@ -900,7 +904,7 @@ async function updateProgressDisplay() {
             directionLabel = 'Spanish Mixed';
         }
     }
-    
+
     // Handle Literature / Biology mode (topics)
     if (state.languageMode === 'literature' || state.languageMode === 'biology' || state.languageMode === 'history' || state.languageMode === 'geography' || state.languageMode === 'chemistry' || state.languageMode === 'chemistry') {
         if (!state.literatureTopicId) {
